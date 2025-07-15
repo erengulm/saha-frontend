@@ -1,25 +1,24 @@
-import logo from './logo.svg';
-import './App.css';
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Navbar from "./components/Navbar";
+import HomePage from "./pages/HomePage";
+import MapPage from "./pages/MapPage";
+import EditProfilePage from "./pages/EditProfilePage";
+import { useAuth } from "./AuthContext";
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+export default function App() {
+    const { isAuthenticated } = useAuth();
+
+    return (
+        <Router>
+            <Navbar />
+            <Routes>
+                <Route path="/" element={<HomePage />} />
+                {isAuthenticated && <Route path="/map" element={<MapPage />} />}
+                {isAuthenticated && <Route path="/edit-profile" element={<EditProfilePage />} />}
+                {/* fallback to HomePage if not found */}
+                <Route path="*" element={<HomePage />} />
+            </Routes>
+        </Router>
+    );
 }
-
-export default App;
