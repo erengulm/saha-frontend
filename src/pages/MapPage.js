@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ReactComponent as TurkiyeHaritasi } from '../assets/TurkiyeHaritasi.svg';
-import '../components/MapPage.css';
 
 const MapPage = () => {
     const [hoveredProvince, setHoveredProvince] = useState(null);
