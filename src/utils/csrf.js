@@ -1,10 +1,11 @@
-import axios from 'axios';
 
-export const getCSRFToken = async () => {
-    try {
-        await axios.get('http://localhost:8000/api/csrf/', { withCredentials: true });
-        console.log('CSRF token retrieved');
-    } catch (err) {
-        console.error('Failed to get CSRF token', err);
+export const getCSRFToken = () => {
+    const token = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    if (!token) {
+        // If no meta tag, try getting from cookie
+        const cookies = document.cookie.split(';');
+        const csrfCookie = cookies.find(cookie => cookie.trim().startsWith('csrftoken='));
+        return csrfCookie ? csrfCookie.split('=')[1] : null;
     }
+    return token;
 };

@@ -5,19 +5,21 @@ import { getCSRFToken } from '../utils/csrf';
 
 const RegisterPage = () => {
     const [formData, setFormData] = useState({
-        username: '',
+        first_name: '',
+        last_name: '',
+        city: '',
+        phone: '',
         email: '',
         password: '',
-        confirmPassword: '',
-        city: ''
+        confirm_password: ''
     });
+
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
-
     const navigate = useNavigate();
 
-    // List of cities (you can expand this or fetch from API)
+    // Turkish cities list
     const cities = [
         'Adana',
         'Adıyaman',
@@ -100,7 +102,6 @@ const RegisterPage = () => {
         'Yalova',
         'Yozgat',
         'Zonguldak',
-
     ];
 
     useEffect(() => {
@@ -126,38 +127,55 @@ const RegisterPage = () => {
     const validateForm = () => {
         const newErrors = {};
 
-        // Username validation
-        if (!formData.username.trim()) {
-            newErrors.username = 'Username is required';
-        } else if (formData.username.length < 3) {
-            newErrors.username = 'Username must be at least 3 characters';
+        // First name validation
+        if (!formData.first_name.trim()) {
+            newErrors.first_name = 'Ad gereklidir';
+        } else if (formData.first_name.length < 2) {
+            newErrors.first_name = 'Ad en az 2 karakter olmalıdır';
+        }
+
+        // Last name validation
+        if (!formData.last_name.trim()) {
+            newErrors.last_name = 'Soyad gereklidir';
+        } else if (formData.last_name.length < 2) {
+            newErrors.last_name = 'Soyad en az 2 karakter olmalıdır';
         }
 
         // Email validation
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!formData.email.trim()) {
-            newErrors.email = 'Email is required';
+            newErrors.email = 'E-posta gereklidir';
         } else if (!emailRegex.test(formData.email)) {
-            newErrors.email = 'Please enter a valid email address';
+            newErrors.email = 'Lütfen geçerli bir e-posta adresi giriniz';
         }
 
-        // Password validation
-        if (!formData.password) {
-            newErrors.password = 'Password is required';
-        } else if (formData.password.length < 6) {
-            newErrors.password = 'Password must be at least 6 characters';
-        }
-
-        // Confirm password validation
-        if (!formData.confirmPassword) {
-            newErrors.confirmPassword = 'Please confirm your password';
-        } else if (formData.password !== formData.confirmPassword) {
-            newErrors.confirmPassword = 'Passwords do not match';
+        // Phone validation (now mandatory)
+        if (!formData.phone.trim()) {
+            newErrors.phone = 'Telefon numarası gereklidir';
+        } else {
+            const phoneRegex = /^(\+90|0)?[5][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]$/;
+            if (!phoneRegex.test(formData.phone.replace(/[\s-]/g, ''))) {
+                newErrors.phone = 'Lütfen geçerli bir Türk telefon numarası giriniz. (Örn: 05XXXXXXXXX)';
+            }
         }
 
         // City validation
         if (!formData.city) {
-            newErrors.city = 'Please select a city';
+            newErrors.city = 'Lütfen şehir seçiniz';
+        }
+
+        // Password validation
+        if (!formData.password) {
+            newErrors.password = 'Şifre gereklidir';
+        } else if (formData.password.length < 8) {
+            newErrors.password = 'Şifre en az 8 karakter olmalıdır';
+        }
+
+        // Confirm password validation
+        if (!formData.confirm_password) {
+            newErrors.confirm_password = 'Lütfen şifrenizi tekrar giriniz';
+        } else if (formData.password !== formData.confirm_password) {
+            newErrors.confirm_password = 'Şifreler eşleşmiyor';
         }
 
         return newErrors;
@@ -179,11 +197,13 @@ const RegisterPage = () => {
 
         try {
             const registrationData = {
-                username: formData.username.trim(),
+                first_name: formData.first_name.trim(),
+                last_name: formData.last_name.trim(),
+                city: formData.city,
+                phone: formData.phone.trim(),
                 email: formData.email.trim(),
                 password: formData.password,
-                confirm_password: formData.confirmPassword,  // Add this line
-                city: formData.city,
+                confirm_password: formData.confirm_password,
                 role: 'member'
             };
 
@@ -191,7 +211,7 @@ const RegisterPage = () => {
                 withCredentials: true,
             });
 
-            setSuccessMessage('Registration successful! Redirecting to login...');
+            setSuccessMessage('Kayıt başarılı! Giriş sayfasına yönlendiriliyorsunuz...');
 
             // Redirect to login page after 2 seconds
             setTimeout(() => {
@@ -200,14 +220,13 @@ const RegisterPage = () => {
 
         } catch (error) {
             console.error('Registration error:', error);
-
             if (error.response?.data) {
                 // Handle specific field errors from backend
                 const backendErrors = error.response.data;
                 setErrors(backendErrors);
             } else {
                 setErrors({
-                    general: 'Registration failed. Please try again.'
+                    general: 'Kayıt işlemi başarısız. Lütfen tekrar deneyiniz.'
                 });
             }
         } finally {
@@ -221,7 +240,7 @@ const RegisterPage = () => {
                 <div className="col-md-6">
                     <div className="card">
                         <div className="card-body">
-                            <h2 className="card-title text-center mb-4">Register</h2>
+                            <h2 className="card-title text-center mb-4">Üye Kayıt</h2>
 
                             {errors.general && (
                                 <div className="alert alert-danger" role="alert">
@@ -236,46 +255,46 @@ const RegisterPage = () => {
                             )}
 
                             <form onSubmit={handleRegister}>
-                                {/* Username */}
+                                {/* First Name */}
                                 <div className="mb-3">
-                                    <label htmlFor="username" className="form-label">
-                                        Username <span className="text-danger">*</span>
+                                    <label htmlFor="first_name" className="form-label">
+                                        Adınız <span className="text-danger">*</span>
                                     </label>
                                     <input
                                         type="text"
-                                        id="username"
-                                        name="username"
-                                        className={`form-control ${errors.username ? 'is-invalid' : ''}`}
-                                        value={formData.username}
+                                        id="first_name"
+                                        name="first_name"
+                                        className={`form-control ${errors.first_name ? 'is-invalid' : ''}`}
+                                        value={formData.first_name}
                                         onChange={handleInputChange}
                                         disabled={loading}
-                                        placeholder="Enter your username"
+                                        placeholder="Adınızı giriniz"
                                     />
-                                    {errors.username && (
+                                    {errors.first_name && (
                                         <div className="invalid-feedback">
-                                            {errors.username}
+                                            {errors.first_name}
                                         </div>
                                     )}
                                 </div>
 
-                                {/* Email */}
+                                {/* Last Name */}
                                 <div className="mb-3">
-                                    <label htmlFor="email" className="form-label">
-                                        Email <span className="text-danger">*</span>
+                                    <label htmlFor="last_name" className="form-label">
+                                        Soyadınız <span className="text-danger">*</span>
                                     </label>
                                     <input
-                                        type="email"
-                                        id="email"
-                                        name="email"
-                                        className={`form-control ${errors.email ? 'is-invalid' : ''}`}
-                                        value={formData.email}
+                                        type="text"
+                                        id="last_name"
+                                        name="last_name"
+                                        className={`form-control ${errors.last_name ? 'is-invalid' : ''}`}
+                                        value={formData.last_name}
                                         onChange={handleInputChange}
                                         disabled={loading}
-                                        placeholder="Enter your email"
+                                        placeholder="Soyadınızı giriniz"
                                     />
-                                    {errors.email && (
+                                    {errors.last_name && (
                                         <div className="invalid-feedback">
-                                            {errors.email}
+                                            {errors.last_name}
                                         </div>
                                     )}
                                 </div>
@@ -283,7 +302,7 @@ const RegisterPage = () => {
                                 {/* City */}
                                 <div className="mb-3">
                                     <label htmlFor="city" className="form-label">
-                                        City <span className="text-danger">*</span>
+                                        Yaşadığınız Şehir <span className="text-danger">*</span>
                                     </label>
                                     <select
                                         id="city"
@@ -293,7 +312,7 @@ const RegisterPage = () => {
                                         onChange={handleInputChange}
                                         disabled={loading}
                                     >
-                                        <option value="">Select your city</option>
+                                        <option value="">Şehir seçiniz</option>
                                         {cities.map(city => (
                                             <option key={city} value={city}>{city}</option>
                                         ))}
@@ -305,10 +324,60 @@ const RegisterPage = () => {
                                     )}
                                 </div>
 
+                                {/* Phone Number */}
+                                <div className="mb-3">
+                                    <label htmlFor="phone" className="form-label">
+                                        Telefon <span className="text-danger">*</span>
+                                    </label>
+                                    <input
+                                        type="tel"
+                                        id="phone"
+                                        name="phone"
+                                        className={`form-control ${errors.phone ? 'is-invalid' : ''}`}
+                                        value={formData.phone}
+                                        onChange={handleInputChange}
+                                        disabled={loading}
+                                        placeholder="05xx xxx xx xx"
+                                    />
+                                    {errors.phone && (
+                                        <div className="invalid-feedback">
+                                            {errors.phone}
+                                        </div>
+                                    )}
+                                    <div className="form-text">
+                                        Telefon numaranızı giriniz (örn: 05xx xxx xx xx)
+                                    </div>
+                                </div>
+
+                                {/* Email */}
+                                <div className="mb-3">
+                                    <label htmlFor="email" className="form-label">
+                                        E-posta <span className="text-danger">*</span>
+                                    </label>
+                                    <input
+                                        type="email"
+                                        id="email"
+                                        name="email"
+                                        className={`form-control ${errors.email ? 'is-invalid' : ''}`}
+                                        value={formData.email}
+                                        onChange={handleInputChange}
+                                        disabled={loading}
+                                        placeholder="E-posta adresinizi giriniz"
+                                    />
+                                    {errors.email && (
+                                        <div className="invalid-feedback">
+                                            {errors.email}
+                                        </div>
+                                    )}
+                                    <div className="form-text">
+                                        E-posta adresiniz giriş yaparken kullanılacaktır
+                                    </div>
+                                </div>
+
                                 {/* Password */}
                                 <div className="mb-3">
                                     <label htmlFor="password" className="form-label">
-                                        Password <span className="text-danger">*</span>
+                                        Şifre <span className="text-danger">*</span>
                                     </label>
                                     <input
                                         type="password"
@@ -318,7 +387,7 @@ const RegisterPage = () => {
                                         value={formData.password}
                                         onChange={handleInputChange}
                                         disabled={loading}
-                                        placeholder="Enter your password"
+                                        placeholder="Şifrenizi giriniz"
                                     />
                                     {errors.password && (
                                         <div className="invalid-feedback">
@@ -326,28 +395,28 @@ const RegisterPage = () => {
                                         </div>
                                     )}
                                     <div className="form-text">
-                                        Password must be at least 6 characters long.
+                                        Şifre en az 8 karakter uzunluğunda olmalıdır
                                     </div>
                                 </div>
 
                                 {/* Confirm Password */}
                                 <div className="mb-3">
-                                    <label htmlFor="confirmPassword" className="form-label">
-                                        Confirm Password <span className="text-danger">*</span>
+                                    <label htmlFor="confirm_password" className="form-label">
+                                        Şifre Tekrar <span className="text-danger">*</span>
                                     </label>
                                     <input
                                         type="password"
-                                        id="confirmPassword"
-                                        name="confirmPassword"
-                                        className={`form-control ${errors.confirmPassword ? 'is-invalid' : ''}`}
-                                        value={formData.confirmPassword}
+                                        id="confirm_password"
+                                        name="confirm_password"
+                                        className={`form-control ${errors.confirm_password ? 'is-invalid' : ''}`}
+                                        value={formData.confirm_password}
                                         onChange={handleInputChange}
                                         disabled={loading}
-                                        placeholder="Confirm your password"
+                                        placeholder="Şifrenizi tekrar giriniz"
                                     />
-                                    {errors.confirmPassword && (
+                                    {errors.confirm_password && (
                                         <div className="invalid-feedback">
-                                            {errors.confirmPassword}
+                                            {errors.confirm_password}
                                         </div>
                                     )}
                                 </div>
@@ -360,18 +429,18 @@ const RegisterPage = () => {
                                     {loading ? (
                                         <>
                                             <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                            Creating Account...
+                                            Hesap Oluşturuluyor...
                                         </>
                                     ) : (
-                                        'Create Account'
+                                        'Hesap Oluştur'
                                     )}
                                 </button>
                             </form>
 
                             <div className="text-center mt-3">
                                 <p className="mb-0">
-                                    Already have an account?
-                                    <a href="/login" className="text-decoration-none ms-1">Login here</a>
+                                    Zaten hesabınız var mı?
+                                    <a href="/login" className="text-decoration-none ms-1">Buradan giriş yapın</a>
                                 </p>
                             </div>
                         </div>

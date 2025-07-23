@@ -1,6 +1,6 @@
 import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { useAuth } from "../AuthContext";
+import { useAuth } from '../context/AuthContext';
 
 export default function Navbar() {
     const { isAuthenticated, login, logout } = useAuth();
@@ -24,24 +24,24 @@ export default function Navbar() {
     return (
         <nav style={{ padding: "1rem", borderBottom: "1px solid #ccc" }}>
             <NavLink to="/" end style={({ isActive }) => (isActive ? activeStyle : undefined)}>
-                Home
+                Ana Sayfa
             </NavLink>{" | "}
 
             {isAuthenticated ? (
                 <>
                     <NavLink to="/map" style={({ isActive }) => (isActive ? activeStyle : undefined)}>
-                        Map
+                        Harita
                     </NavLink>{" | "}
                     <NavLink to="/edit-profile" style={({ isActive }) => (isActive ? activeStyle : undefined)}>
-                        Edit Profile
+                        Profili Düzenle
                     </NavLink>{" | "}
                     <button onClick={handleLogout} style={{ marginLeft: "1rem" }}>
-                        Logout
+                        Çıkış Yap
                     </button>
                 </>
             ) : (
                 <button onClick={handleLogin} style={{ marginLeft: "1rem" }}>
-                    Login
+                    Giriş Yap
                 </button>
             )}
         </nav>
