@@ -344,9 +344,9 @@ const RegisterPage = () => {
                                             {errors.phone}
                                         </div>
                                     )}
-                                    <div className="form-text">
-                                        Telefon numaranızı giriniz (örn: 05xx xxx xx xx)
-                                    </div>
+                                    {/*<div className="form-text">*/}
+                                    {/*    Telefon numaranızı giriniz (örn: 05xx xxx xx xx)*/}
+                                    {/*</div>*/}
                                 </div>
 
                                 {/* Email */}

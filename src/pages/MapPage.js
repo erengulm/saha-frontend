@@ -121,7 +121,14 @@ const MapPage = () => {
         // This is sample data - replace with your actual member data
         const sampleMembers = {
             '06': ['Ahmet Yılmaz', 'Fatma Demir', 'Mehmet Kaya', 'Ayşe Çelik', 'Mustafa Şahin'],
-            '34': ['Zeynep Arslan', 'Ali Öztürk', 'Gülden Aydın', 'Hasan Koç', 'Merve Güneş', 'Oğuz Polat', 'Seda Karaca'],
+            '34': [
+                'Zeynep Arslan', 'Ali Öztürk', 'Gülden Aydın', 'Hasan Koç', 'Merve Güneş',
+                'Oğuz Polat', 'Seda Karaca', 'Emre Kılıç', 'Derya Özcan', 'Burak Şimşek',
+                'Elif Yıldırım', 'Kerem Bulut', 'Sibel Kara', 'Murat Çelik', 'Neslihan Erdoğan',
+                'Tolga Akman', 'Burcu Yaşar', 'Orhan Tekin', 'Gizem Özer', 'Can Yücel',
+                'Pınar Doğan', 'Serhat Koçak', 'Aslı Güven', 'Barış Esen', 'Deniz Çakır',
+                'Sevgi Ateş', 'Onur Demirci', 'Aylin Kartal', 'Erkan Özdemir', 'Selin Bayrak'
+            ],
             '35': ['Burak Çetin', 'Deniz Mutlu', 'Ece Doğan', 'Ferhat Yıldız'],
             '01': ['Canan Özkan', 'Emre Aksoy', 'Gökhan Taş'],
             '07': ['Selma Kara', 'Yasin Çakır', 'Berna Tokgöz', 'Kemal Erdem'],
@@ -176,8 +183,8 @@ const MapPage = () => {
                     plakaKodu = event.target.parentNode.getAttribute('data-plakakodu');
                 }
 
-                // Skip if it's South Cyprus or if no city name found
-                if (event.target.parentNode?.id === 'guney-kibris' || !ilAdi) {
+                // Skip if no city name found
+                if (!ilAdi) {
                     return;
                 }
 
@@ -221,11 +228,6 @@ const MapPage = () => {
                 const id = parent?.getAttribute('id') || event.target.getAttribute('id');
                 let plakaKodu = parent?.getAttribute('data-plakakodu') || event.target.getAttribute('data-plakakodu');
                 let ilAdi = parent?.getAttribute('data-iladi') || event.target.getAttribute('data-iladi');
-
-                // Skip if it's South Cyprus
-                if (id === 'guney-kibris') {
-                    return;
-                }
 
                 // If we don't have the plate code from SVG, try to match with our provinces data
                 if (!plakaKodu && ilAdi) {
@@ -285,16 +287,119 @@ const MapPage = () => {
     }, [navigate]); // Add navigate to dependencies
 
     return (
-        <div className="map-container" style={{ display: 'flex', gap: '20px' }}>
-            {/* Map Section */}
-            <div className="svg-turkiye-haritasi" ref={mapRef} style={{ flex: '1' }}>
-                <h2 className="mb-4">SaHa Türkiye Geneli Üye Haritası</h2>
-                <p className="mb-3 text-gray-600">Üye profillerini görmek için bir ile tıklayın</p>
-                <TurkiyeHaritasi />
+        <div className="page-container" style={{ display: 'flex', height: 'calc(100vh - 100px)' }}>
+            {/* Left Section - Title and Map */}
+            <div className="left-section" style={{ flex: '1' }}>
+                {/* Title and Province Info Section */}
+                <div className="header-section" style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    marginBottom: '20px',
+                    gap: '30px'
+                }}>
+                    {/* Title */}
+                    <div className="title-section">
+                        <h2 className="mb-4">SaHa Türkiye Geneli Üye Haritası</h2>
+                        <p className="mb-3 text-gray-600">Üye profillerini görmek için bir ile tıklayın</p>
+                    </div>
 
-                {/* Members List Section - Below the Map */}
-                {selectedProvince && (
-                    <div className="members-section" style={{ marginTop: '30px', padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+                    {/* Province Info Boxes */}
+                    <div className="province-info-boxes" style={{
+                        display: 'flex',
+                        gap: '15px',
+                        flex: '1'
+                    }}>
+                        {hoveredProvince ? (
+                            <div className="hovered-info" style={{
+                                flex: '1',
+                                padding: '10px',
+                                backgroundColor: 'white',
+                                borderRadius: '6px',
+                                border: '2px solid #ff6b35',
+                                minHeight: '60px'
+                            }}>
+                                <h4 style={{ margin: '0 0 4px 0', color: '#ff6b35', fontSize: '16px' }}>Üzerine Gelinen İl</h4>
+                                <p style={{ margin: '0', fontSize: '18px', fontWeight: 'bold' }}>
+                                    {hoveredProvince.name}
+                                </p>
+                                <p style={{ margin: '2px 0 0 0', color: '#666', fontSize: '14px' }}>
+                                    Plaka: {hoveredProvince.code}
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="hover-instruction" style={{
+                                flex: '1',
+                                padding: '10px',
+                                backgroundColor: 'white',
+                                borderRadius: '6px',
+                                border: '1px solid #ddd',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                minHeight: '60px'
+                            }}>
+                                <p style={{ margin: '0', color: '#666', fontSize: '14px', textAlign: 'center' }}>
+                                    Bir ilin üzerine gelin
+                                </p>
+                            </div>
+                        )}
+
+                        {selectedProvince ? (
+                            <div className="selected-info" style={{
+                                flex: '1',
+                                padding: '10px',
+                                backgroundColor: 'white',
+                                borderRadius: '6px',
+                                border: '2px solid #28a745',
+                                minHeight: '60px'
+                            }}>
+                                <h4 style={{ margin: '0 0 4px 0', color: '#28a745', fontSize: '16px' }}>Seçilen İl</h4>
+                                <p style={{ margin: '0', fontSize: '18px', fontWeight: 'bold' }}>
+                                    {selectedProvince.name}
+                                </p>
+                                <p style={{ margin: '2px 0 0 0', color: '#666', fontSize: '14px' }}>
+                                    Plaka: {selectedProvince.code} | Üye: {members.length}
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="click-instruction" style={{
+                                flex: '1',
+                                padding: '10px',
+                                backgroundColor: 'white',
+                                borderRadius: '6px',
+                                border: '1px solid #ddd',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                minHeight: '60px'
+                            }}>
+                                <p style={{ margin: '0', color: '#666', fontSize: '14px', textAlign: 'center' }}>
+                                    Bir ile tıklayın
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Map - Fixed Small Size */}
+                <div className="svg-turkiye-haritasi" ref={mapRef} style={{
+                    width: '100%'
+                }}>
+                    <TurkiyeHaritasi />
+                </div>
+            </div>
+
+            {/* Right Panel - Always Visible */}
+            <div className="members-section" style={{
+                width: '350px',
+                padding: '20px',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '8px',
+                height: '100%',
+                overflowY: 'auto'
+            }}>
+                {selectedProvince ? (
+                    <>
                         <h3 style={{ marginBottom: '15px', color: '#333' }}>
                             {selectedProvince.name} ({selectedProvince.code}) İlinden Üyeler
                         </h3>
@@ -325,69 +430,17 @@ const MapPage = () => {
                                 Bu ilden henüz kayıtlı üye bulunmamaktadır.
                             </p>
                         )}
-                    </div>
-                )}
-            </div>
-
-            {/* Province Info Panel - Right Side */}
-            <div className="province-info-panel" style={{
-                width: '280px',
-                padding: '20px',
-                backgroundColor: '#f5f5f5',
-                borderRadius: '8px',
-                height: 'fit-content',
-                position: 'sticky',
-                top: '20px'
-            }}>
-                <h3 style={{ marginBottom: '15px', color: '#333' }}>İl Bilgileri</h3>
-
-                {hoveredProvince ? (
-                    <div className="hovered-info" style={{
-                        padding: '15px',
-                        backgroundColor: 'white',
-                        borderRadius: '6px',
-                        border: '2px solid #ff6b35',
-                        marginBottom: '15px'
-                    }}>
-                        <h4 style={{ margin: '0 0 8px 0', color: '#ff6b35' }}>Üzerine Gelinen İl</h4>
-                        <p style={{ margin: '0', fontSize: '18px', fontWeight: 'bold' }}>
-                            {hoveredProvince.name}
-                        </p>
-                        <p style={{ margin: '4px 0 0 0', color: '#666' }}>
-                            Plaka Kodu: {hoveredProvince.code}
-                        </p>
-                    </div>
+                    </>
                 ) : (
-                    <div className="hover-instruction" style={{
-                        padding: '15px',
-                        backgroundColor: 'white',
-                        borderRadius: '6px',
-                        border: '1px solid #ddd',
-                        marginBottom: '15px',
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        height: '200px',
                         textAlign: 'center'
                     }}>
-                        <p style={{ margin: '0', color: '#666', fontSize: '14px' }}>
-                            Bir ilin üzerine gelin veya tıklayın
-                        </p>
-                    </div>
-                )}
-
-                {selectedProvince && (
-                    <div className="selected-info" style={{
-                        padding: '15px',
-                        backgroundColor: 'white',
-                        borderRadius: '6px',
-                        border: '2px solid #28a745'
-                    }}>
-                        <h4 style={{ margin: '0 0 8px 0', color: '#28a745' }}>Seçilen İl</h4>
-                        <p style={{ margin: '0', fontSize: '18px', fontWeight: 'bold' }}>
-                            {selectedProvince.name}
-                        </p>
-                        <p style={{ margin: '4px 0', color: '#666' }}>
-                            Plaka Kodu: {selectedProvince.code}
-                        </p>
-                        <p style={{ margin: '8px 0 0 0', fontSize: '14px', color: '#28a745' }}>
-                            Üye Sayısı: {members.length}
+                        <p style={{ color: '#999', fontSize: '16px' }}>
+                            Üye listesini görmek için<br/>bir ile tıklayın
                         </p>
                     </div>
                 )}

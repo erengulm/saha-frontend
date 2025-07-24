@@ -172,9 +172,11 @@ const LoginPage = () => {
                                             {errors.password}
                                         </div>
                                     )}
-                                    <div className="form-text">
-                                        Şifreniz en az 6 karakter uzunluğunda olmalıdır
-                                    </div>
+
+                                    {/*<div className="form-text">*/}
+                                    {/*    Şifreniz en az 8 karakter uzunluğunda olmalıdır*/}
+                                    {/*</div>*/}
+
                                 </div>
 
                                 <button
