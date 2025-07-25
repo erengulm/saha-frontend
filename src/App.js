@@ -66,7 +66,7 @@ function App() {
 
             <Routes>
                 <Route path="/" element={<HomePage />} />
-                <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/" replace />} />
+                <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/map" replace />} />
                 <Route path="/register" element={!user ? <RegisterPage /> : <Navigate to="/" replace />} />
                 <Route path="/map" element={user ? <MapPage /> : <Navigate to="/login" replace />} />
                 <Route path="/edit-profile" element={user ? <EditProfilePage /> : <Navigate to="/login" replace />} />

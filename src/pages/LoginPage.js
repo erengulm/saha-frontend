@@ -78,12 +78,7 @@ const LoginPage = () => {
             const result = await login(loginData);
 
             if (result?.success) {
-                setSuccessMessage('Giriş başarılı! Yönlendiriliyorsunuz...');
-
-                // Redirect to map page after 1 second
-                setTimeout(() => {
-                    navigate('/map');
-                }, 1000);
+                navigate('/map', { replace: true });
             } else {
                 setErrors({
                     general: result?.error || 'Giriş başarısız. E-posta veya şifre hatalı.'
