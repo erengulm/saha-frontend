@@ -370,7 +370,7 @@ const RegisterPage = () => {
                                         </div>
                                     )}
                                     <div className="form-text">
-                                        E-posta adresiniz giriş yaparken kullanılacaktır
+                                        E-posta adresiniz oturum açarken kullanılacaktır
                                     </div>
                                 </div>
 

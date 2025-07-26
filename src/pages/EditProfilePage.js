@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext'; // Adjust path as needed
+import { useAuth } from '../context/AuthContext';
 
 const EditProfilePage = () => {
     const navigate = useNavigate();
     const { user, updateProfile, changePassword, loading: authLoading, error: authError, isAuthenticated } = useAuth();
 
     const [profileData, setProfileData] = useState({
-        username: '',
-        email: '',
+        first_name: '',
+        last_name: '',
+        city: '',
         phone: '',
-        city: ''
+        email: ''
     });
 
     const [passwordData, setPasswordData] = useState({
@@ -24,7 +25,7 @@ const EditProfilePage = () => {
     const [loading, setLoading] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
 
-    // List of cities
+    // Turkish cities list (same as register page)
     const cities = [
         'Adana', 'Adıyaman', 'Afyonkarahisar', 'Ağrı', 'Aksaray', 'Amasya', 'Ankara', 'Antalya',
         'Ardahan', 'Artvin', 'Aydın', 'Balıkesir', 'Bartın', 'Batman', 'Bayburt', 'Bilecik',
@@ -50,10 +51,11 @@ const EditProfilePage = () => {
     useEffect(() => {
         if (user) {
             setProfileData({
-                username: user.username || '',
-                email: user.email || '',
+                first_name: user.first_name || '',
+                last_name: user.last_name || '',
+                city: user.city || '',
                 phone: user.phone || '',
-                city: user.city || ''
+                email: user.email || ''
             });
         }
     }, [user]);
@@ -93,30 +95,41 @@ const EditProfilePage = () => {
     const validateProfileForm = () => {
         const newErrors = {};
 
-        // Username validation
-        if (!profileData.username.trim()) {
-            newErrors.username = 'Kullanıcı adı gereklidir';
-        } else if (profileData.username.trim().length < 3) {
-            newErrors.username = 'Kullanıcı adı en az 3 karakter olmalıdır';
+        // First name validation (same as register)
+        if (!profileData.first_name.trim()) {
+            newErrors.first_name = 'Ad gereklidir';
+        } else if (profileData.first_name.length < 2) {
+            newErrors.first_name = 'Ad en az 2 karakter olmalıdır';
         }
 
-        // Email validation
+        // Last name validation (same as register)
+        if (!profileData.last_name.trim()) {
+            newErrors.last_name = 'Soyad gereklidir';
+        } else if (profileData.last_name.length < 2) {
+            newErrors.last_name = 'Soyad en az 2 karakter olmalıdır';
+        }
+
+        // City validation (same as register)
+        if (!profileData.city) {
+            newErrors.city = 'Lütfen şehir seçiniz';
+        }
+
+        // Phone validation (same as register)
+        if (!profileData.phone.trim()) {
+            newErrors.phone = 'Telefon numarası gereklidir';
+        } else {
+            const phoneRegex = /^(\+90|0)?[5][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]$/;
+            if (!phoneRegex.test(profileData.phone.replace(/[\s-]/g, ''))) {
+                newErrors.phone = 'Lütfen geçerli bir Türk telefon numarası giriniz. (Örn: 05XXXXXXXXX)';
+            }
+        }
+
+        // Email validation (same as register)
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!profileData.email.trim()) {
-            newErrors.email = 'Email gereklidir';
+            newErrors.email = 'E-posta gereklidir';
         } else if (!emailRegex.test(profileData.email)) {
-            newErrors.email = 'Geçerli bir email adresi giriniz';
-        }
-
-        // Phone validation
-        const phoneRegex = /^(\+90|0)?[5][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]$/;
-        if (profileData.phone && !phoneRegex.test(profileData.phone.replace(/\s/g, ''))) {
-            newErrors.phone = 'Geçerli bir telefon numarası giriniz';
-        }
-
-        // City validation
-        if (!profileData.city) {
-            newErrors.city = 'Şehir seçimi gereklidir';
+            newErrors.email = 'Lütfen geçerli bir e-posta adresi giriniz';
         }
 
         return newErrors;
@@ -130,14 +143,14 @@ const EditProfilePage = () => {
             newErrors.currentPassword = 'Mevcut şifrenizi giriniz';
         }
 
-        // New password validation
+        // New password validation (same as register)
         if (!passwordData.newPassword) {
             newErrors.newPassword = 'Yeni şifre gereklidir';
-        } else if (passwordData.newPassword.length < 6) {
-            newErrors.newPassword = 'Yeni şifre en az 6 karakter olmalıdır';
+        } else if (passwordData.newPassword.length < 8) {
+            newErrors.newPassword = 'Yeni şifre en az 8 karakter olmalıdır';
         }
 
-        // Confirm password validation
+        // Confirm password validation (same as register)
         if (!passwordData.confirmPassword) {
             newErrors.confirmPassword = 'Yeni şifreyi tekrar giriniz';
         } else if (passwordData.newPassword !== passwordData.confirmPassword) {
@@ -171,9 +184,14 @@ const EditProfilePage = () => {
             const result = await updateProfile(profileData);
 
             if (result.success) {
-                setSuccessMessage('Profil bilgileriniz başarıyla güncellendi!');
+                setSuccessMessage('Profil bilgileriniz başarıyla güncellendi! Ana sayfaya yönlendiriliyorsunuz...');
                 // Clear any previous errors
                 setErrors({});
+
+                // Redirect to homepage after half a second
+                setTimeout(() => {
+                    navigate('/');
+                }, 500);
             } else {
                 // Handle errors from the updateProfile function
                 if (result.errors) {
@@ -312,100 +330,119 @@ const EditProfilePage = () => {
                             {/* Profile Tab Content */}
                             {activeTab === 'profile' && (
                                 <form onSubmit={handleProfileSubmit}>
-                                    <div className="row">
-                                        <div className="col-md-6">
-                                            {/* Username */}
-                                            <div className="mb-3">
-                                                <label htmlFor="username" className="form-label">
-                                                    Kullanıcı Adı <span className="text-danger">*</span>
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    id="username"
-                                                    name="username"
-                                                    className={`form-control ${errors.username ? 'is-invalid' : ''}`}
-                                                    value={profileData.username}
-                                                    onChange={handleProfileInputChange}
-                                                    disabled={loading}
-                                                />
-                                                {errors.username && (
-                                                    <div className="invalid-feedback">
-                                                        {errors.username}
-                                                    </div>
-                                                )}
+                                    {/* First Name */}
+                                    <div className="mb-3">
+                                        <label htmlFor="first_name" className="form-label">
+                                            Adınız <span className="text-danger">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            id="first_name"
+                                            name="first_name"
+                                            className={`form-control ${errors.first_name ? 'is-invalid' : ''}`}
+                                            value={profileData.first_name}
+                                            onChange={handleProfileInputChange}
+                                            disabled={loading}
+                                            placeholder="Adınızı giriniz"
+                                        />
+                                        {errors.first_name && (
+                                            <div className="invalid-feedback">
+                                                {errors.first_name}
                                             </div>
+                                        )}
+                                    </div>
 
-                                            {/* Email */}
-                                            <div className="mb-3">
-                                                <label htmlFor="email" className="form-label">
-                                                    Email <span className="text-danger">*</span>
-                                                </label>
-                                                <input
-                                                    type="email"
-                                                    id="email"
-                                                    name="email"
-                                                    className={`form-control ${errors.email ? 'is-invalid' : ''}`}
-                                                    value={profileData.email}
-                                                    onChange={handleProfileInputChange}
-                                                    disabled={loading}
-                                                />
-                                                {errors.email && (
-                                                    <div className="invalid-feedback">
-                                                        {errors.email}
-                                                    </div>
-                                                )}
+                                    {/* Last Name */}
+                                    <div className="mb-3">
+                                        <label htmlFor="last_name" className="form-label">
+                                            Soyadınız <span className="text-danger">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            id="last_name"
+                                            name="last_name"
+                                            className={`form-control ${errors.last_name ? 'is-invalid' : ''}`}
+                                            value={profileData.last_name}
+                                            onChange={handleProfileInputChange}
+                                            disabled={loading}
+                                            placeholder="Soyadınızı giriniz"
+                                        />
+                                        {errors.last_name && (
+                                            <div className="invalid-feedback">
+                                                {errors.last_name}
                                             </div>
-                                        </div>
+                                        )}
+                                    </div>
 
-                                        <div className="col-md-6">
-                                            {/* Phone */}
-                                            <div className="mb-3">
-                                                <label htmlFor="phone" className="form-label">
-                                                    Telefon
-                                                </label>
-                                                <input
-                                                    type="tel"
-                                                    id="phone"
-                                                    name="phone"
-                                                    className={`form-control ${errors.phone ? 'is-invalid' : ''}`}
-                                                    value={profileData.phone}
-                                                    onChange={handleProfileInputChange}
-                                                    placeholder="0555 123 4567"
-                                                    disabled={loading}
-                                                />
-                                                {errors.phone && (
-                                                    <div className="invalid-feedback">
-                                                        {errors.phone}
-                                                    </div>
-                                                )}
+                                    {/* City */}
+                                    <div className="mb-3">
+                                        <label htmlFor="city" className="form-label">
+                                            Yaşadığınız Şehir <span className="text-danger">*</span>
+                                        </label>
+                                        <select
+                                            id="city"
+                                            name="city"
+                                            className={`form-select ${errors.city ? 'is-invalid' : ''}`}
+                                            value={profileData.city}
+                                            onChange={handleProfileInputChange}
+                                            disabled={loading}
+                                        >
+                                            <option value="">Şehir seçiniz</option>
+                                            {cities.map(city => (
+                                                <option key={city} value={city}>{city}</option>
+                                            ))}
+                                        </select>
+                                        {errors.city && (
+                                            <div className="invalid-feedback">
+                                                {errors.city}
                                             </div>
+                                        )}
+                                    </div>
 
-                                            {/* City */}
-                                            <div className="mb-3">
-                                                <label htmlFor="city" className="form-label">
-                                                    Şehir <span className="text-danger">*</span>
-                                                </label>
-                                                <select
-                                                    id="city"
-                                                    name="city"
-                                                    className={`form-select ${errors.city ? 'is-invalid' : ''}`}
-                                                    value={profileData.city}
-                                                    onChange={handleProfileInputChange}
-                                                    disabled={loading}
-                                                >
-                                                    <option value="">Şehir seçiniz</option>
-                                                    {cities.map((city) => (
-                                                        <option key={city} value={city}>
-                                                            {city}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                                {errors.city && (
-                                                    <div className="invalid-feedback">
-                                                        {errors.city}
-                                                    </div>
-                                                )}
+                                    {/* Phone Number */}
+                                    <div className="mb-3">
+                                        <label htmlFor="phone" className="form-label">
+                                            Telefon <span className="text-danger">*</span>
+                                        </label>
+                                        <input
+                                            type="tel"
+                                            id="phone"
+                                            name="phone"
+                                            className={`form-control ${errors.phone ? 'is-invalid' : ''}`}
+                                            value={profileData.phone}
+                                            onChange={handleProfileInputChange}
+                                            disabled={loading}
+                                            placeholder="05xx xxx xx xx"
+                                        />
+                                        {errors.phone && (
+                                            <div className="invalid-feedback">
+                                                {errors.phone}
                                             </div>
+                                        )}
+                                    </div>
+
+                                    {/* Email */}
+                                    <div className="mb-3">
+                                        <label htmlFor="email" className="form-label">
+                                            E-posta <span className="text-danger">*</span>
+                                        </label>
+                                        <input
+                                            type="email"
+                                            id="email"
+                                            name="email"
+                                            className={`form-control ${errors.email ? 'is-invalid' : ''}`}
+                                            value={profileData.email}
+                                            onChange={handleProfileInputChange}
+                                            disabled={loading}
+                                            placeholder="E-posta adresinizi giriniz"
+                                        />
+                                        {errors.email && (
+                                            <div className="invalid-feedback">
+                                                {errors.email}
+                                            </div>
+                                        )}
+                                        <div className="form-text">
+                                            E-posta adresiniz giriş yaparken kullanılacaktır
                                         </div>
                                     </div>
 
@@ -413,14 +450,14 @@ const EditProfilePage = () => {
                                         <button
                                             type="button"
                                             className="btn btn-secondary"
-                                            onClick={() => navigate('/profile')}
+                                            onClick={() => navigate('/')}
                                             disabled={loading}
                                         >
                                             İptal
                                         </button>
                                         <button
                                             type="submit"
-                                            className="btn btn-primary"
+                                            className="btn btn-success"
                                             disabled={loading}
                                         >
                                             {loading ? (
@@ -481,6 +518,9 @@ const EditProfilePage = () => {
                                                         {errors.newPassword || errors.new_password}
                                                     </div>
                                                 )}
+                                                <div className="form-text">
+                                                    Şifre en az 8 karakter uzunluğunda olmalıdır
+                                                </div>
                                             </div>
 
                                             {/* Confirm New Password */}
