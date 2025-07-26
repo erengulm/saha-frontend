@@ -1,11 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ReactComponent as TurkiyeHaritasi } from '../assets/TurkiyeHaritasi.svg';
+import axiosInstance from '../api/axios';
 
 const MapPage = () => {
     const [hoveredProvince, setHoveredProvince] = useState(null);
     const [selectedProvince, setSelectedProvince] = useState(null);
     const [members, setMembers] = useState([]);
+    const [cityUsersData, setCityUsersData] = useState({});
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const mapRef = useRef(null);
     const navigate = useNavigate();
 
@@ -94,6 +98,32 @@ const MapPage = () => {
         '81': 'Düzce'
     };
 
+    // Fetch users data from database
+    useEffect(() => {
+        const fetchUsersData = async () => {
+            try {
+                setLoading(true);
+                const response = await axiosInstance.get('users/by-city/');
+
+                if (response.data.success) {
+                    setCityUsersData(response.data.data);
+                    setError(null);
+                } else {
+                    setError('Kullanıcı verileri alınamadı');
+                }
+            } catch (err) {
+                console.error('Error fetching users data:', err);
+                setError('Sunucu hatası: Kullanıcı verileri alınamadı');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchUsersData().catch(error => {
+            console.error('Unhandled error in fetchUsersData:', error);
+        });
+    }, []);
+
     // Function to decode Unicode escape sequences
     const decodeUnicodeString = (str) => {
         if (!str) return str;
@@ -116,42 +146,52 @@ const MapPage = () => {
         }
     };
 
-    // Sample member data - replace this with your actual data source
+    // Get members by province name
     const getMembersByProvince = (plateCode, provinceName) => {
-        // This is sample data - replace with your actual member data
-        const sampleMembers = {
-            '06': ['Ahmet Yılmaz', 'Fatma Demir', 'Mehmet Kaya', 'Ayşe Çelik', 'Mustafa Şahin'],
-            '34': [
-                'Zeynep Arslan', 'Ali Öztürk', 'Gülden Aydın', 'Hasan Koç', 'Merve Güneş',
-                'Oğuz Polat', 'Seda Karaca', 'Emre Kılıç', 'Derya Özcan', 'Burak Şimşek',
-                'Elif Yıldırım', 'Kerem Bulut', 'Sibel Kara', 'Murat Çelik', 'Neslihan Erdoğan',
-                'Tolga Akman', 'Burcu Yaşar', 'Orhan Tekin', 'Gizem Özer', 'Can Yücel',
-                'Pınar Doğan', 'Serhat Koçak', 'Aslı Güven', 'Barış Esen', 'Deniz Çakır',
-                'Sevgi Ateş', 'Onur Demirci', 'Aylin Kartal', 'Erkan Özdemir', 'Selin Bayrak'
-            ],
-            '35': ['Burak Çetin', 'Deniz Mutlu', 'Ece Doğan', 'Ferhat Yıldız'],
-            '01': ['Canan Özkan', 'Emre Aksoy', 'Gökhan Taş'],
-            '07': ['Selma Kara', 'Yasin Çakır', 'Berna Tokgöz', 'Kemal Erdem'],
-            '16': ['Işıl Durmuş', 'Kaan Uçar', 'Lale Sezer', 'Murat Aslan', 'Nur Bayram']
-        };
+        // Direct match first
+        if (cityUsersData[provinceName]) {
+            return cityUsersData[provinceName];
+        }
 
-        // Return members for the province, or empty array if no members
-        return sampleMembers[plateCode] || [];
+        // Case-insensitive match
+        const cityKey = Object.keys(cityUsersData).find(
+            city => city.toLowerCase() === provinceName.toLowerCase()
+        );
+
+        if (cityKey) {
+            return cityUsersData[cityKey];
+        }
+
+        // Try partial matching
+        const partialMatch = Object.keys(cityUsersData).find(city => {
+            const cleanCity = city.toLowerCase().trim();
+            const cleanProvince = provinceName.toLowerCase().trim();
+            return cleanCity.includes(cleanProvince) || cleanProvince.includes(cleanCity);
+        });
+
+        if (partialMatch) {
+            return cityUsersData[partialMatch];
+        }
+
+        return [];
     };
 
     // Handle province click - show member names
     const handleProvinceClick = (plateCode, provinceName) => {
-        console.log(`Clicked on ${provinceName} (${plateCode})`);
-
         // Set selected province info
         setSelectedProvince({ code: plateCode, name: provinceName });
 
-        // Get members for this province
+        // Get members for this province from database
         const provinceMembers = getMembersByProvince(plateCode, provinceName);
         setMembers(provinceMembers);
     };
 
     useEffect(() => {
+        // Only set up event listeners after data is loaded
+        if (Object.keys(cityUsersData).length === 0) {
+            return;
+        }
+
         // For SVG imports, we need to handle them differently
         const findSvgElement = () => {
             if (!mapRef.current) return null;
@@ -199,7 +239,6 @@ const MapPage = () => {
                 const formattedCode = plakaKodu ? plakaKodu.padStart(2, '0') : '';
 
                 setHoveredProvince({ name: ilAdi, code: formattedCode });
-                // Remove tooltip completely - no more popup
             }
         };
 
@@ -243,13 +282,13 @@ const MapPage = () => {
                     ilAdi = provinces[plakaKodu];
                 } else if (ilAdi) {
                     // Decode Unicode escape sequences in province name
-                    ilAdi = decodeUnicodeString(ilAdi);
+                    const decodedName = decodeUnicodeString(ilAdi);
+                    ilAdi = decodedName;
                 }
 
                 if (plakaKodu && ilAdi) {
                     // Format plate code with leading zero
                     const formattedCode = plakaKodu.padStart(2, '0');
-                    console.log(`Clicked on ${ilAdi} (${formattedCode})`);
                     handleProvinceClick(formattedCode, ilAdi);
                 } else {
                     console.warn('Province data not found for clicked element');
@@ -284,7 +323,23 @@ const MapPage = () => {
                 element.removeEventListener('click', handleClick);
             }
         };
-    }, [navigate]); // Add navigate to dependencies
+    }, [navigate, cityUsersData]);
+
+    if (loading) {
+        return (
+            <div className="page-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 'calc(100vh - 100px)' }}>
+                <p>Kullanıcı verileri yükleniyor...</p>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="page-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 'calc(100vh - 100px)' }}>
+                <p style={{ color: 'red' }}>{error}</p>
+            </div>
+        );
+    }
 
     return (
         <div className="page-container" style={{ display: 'flex', height: 'calc(100vh - 100px)' }}>
@@ -420,7 +475,11 @@ const MapPage = () => {
                                                 border: '1px solid #e0e0e0'
                                             }}
                                         >
-                                            {member}
+                                            <div style={{ fontWeight: 'bold' }}>{member.name}</div>
+                                            <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
+                                                {member.role === 'superadmin' ? 'Süper Admin' :
+                                                    member.role === 'admin' ? 'Admin' : 'Üye'}
+                                            </div>
                                         </li>
                                     ))}
                                 </ul>
