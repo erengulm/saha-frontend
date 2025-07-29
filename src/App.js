@@ -6,13 +6,14 @@ import RegisterPage from './pages/RegisterPage';
 import MapPage from './pages/MapPage';
 import EditProfilePage from './pages/EditProfilePage';
 import { AuthContext } from './context/AuthContext';
+import Navbar from './components/Navbar';
 import axios from 'axios';
+import './App.css';
 
 function App() {
     const { user, logout } = useContext(AuthContext);
-    // In your main App.js or index.js
 
-// Function to get CSRF token
+    // Function to get CSRF token
     const getCSRFToken = () => {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
@@ -28,11 +29,11 @@ function App() {
         return cookieValue;
     };
 
-// Set default headers for all requests
+    // Set default headers for all requests
     axios.defaults.headers.common['X-CSRFToken'] = getCSRFToken();
     axios.defaults.withCredentials = true;
 
-// Or use an interceptor to get fresh token for each request
+    // Or use an interceptor to get fresh token for each request
     axios.interceptors.request.use(
         (config) => {
             const token = getCSRFToken();
@@ -45,34 +46,42 @@ function App() {
             return Promise.reject(error);
         }
     );
+
     return (
-        <Router>
-            <nav style={{ padding: '10px', borderBottom: '1px solid #ccc' }}>
-                <Link to="/" style={{ marginRight: '10px' }}>Ana Sayfa</Link>
+        <div className="App">
+            <Router>
+                <Navbar user={user} logout={logout} />
 
-                {!user ? (
-                    <>
-                        <Link to="/login" style={{ marginRight: '10px' }}>Giriş Yap</Link>
-                        <Link to="/register" style={{ marginRight: '10px' }}>Kayıt Ol</Link>
-                    </>
-                ) : (
-                    <>
-                        <Link to="/map" style={{ marginRight: '10px' }}>Harita</Link>
-                        <Link to="/edit-profile" style={{ marginRight: '10px' }}>Profili Düzenle</Link>
-                        <button onClick={logout}>Çıkış Yap</button>
-                    </>
-                )}
-            </nav>
+                <main className="main-content" style={{ paddingTop: '12px', padding: '12px 1rem 0 1rem' }}>
+                    <Routes>
+                        <Route path="/" element={<HomePage />} />
+                        <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/map" replace />} />
+                        <Route path="/register" element={!user ? <RegisterPage /> : <Navigate to="/login" replace />} />
+                        <Route path="/map" element={user ? <MapPage /> : <Navigate to="/login" replace />} />
+                        <Route path="/edit-profile" element={user ? <EditProfilePage /> : <Navigate to="/login" replace />} />
+                        <Route path="*" element={
+                            <div className="error-page">
+                                <div className="content-section">
+                                    <h2 className="section-title">404 - Sayfa Bulunamadı</h2>
+                                    <p className="section-content">
+                                        Aradığınız sayfa mevcut değil. Ana sayfaya dönmek için
+                                        <Link to="/" className="btn-primary" style={{marginLeft: '3px'}}>
+                                            buraya tıklayın
+                                        </Link>
+                                    </p>
+                                </div>
+                            </div>
+                        } />
+                    </Routes>
+                </main>
 
-            <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/map" replace />} />
-                <Route path="/register" element={!user ? <RegisterPage /> : <Navigate to="/" replace />} />
-                <Route path="/map" element={user ? <MapPage /> : <Navigate to="/login" replace />} />
-                <Route path="/edit-profile" element={user ? <EditProfilePage /> : <Navigate to="/login" replace />} />
-                <Route path="*" element={<h2>404 - Sayfa bulunamadı</h2>} />
-            </Routes>
-        </Router>
+                <footer className="footer">
+                    <div className="footer-content">
+                        <p>&copy; 2025 HareketPlatform. Tüm hakları saklıdır.</p>
+                    </div>
+                </footer>
+            </Router>
+        </div>
     );
 }
 

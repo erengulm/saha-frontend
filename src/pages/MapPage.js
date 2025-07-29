@@ -327,182 +327,203 @@ const MapPage = () => {
 
     if (loading) {
         return (
-            <div className="page-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 'calc(100vh - 100px)' }}>
-                <p>Kullanıcı verileri yükleniyor...</p>
+            <div className="homepage">
+                <div className="page-container" style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: 'calc(100vh - 80px)',
+                    marginTop: '80px',
+                    marginLeft: '2rem'
+                }}>
+                    <p>Kullanıcı verileri yükleniyor...</p>
+                </div>
             </div>
         );
     }
 
     if (error) {
         return (
-            <div className="page-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 'calc(100vh - 100px)' }}>
-                <p style={{ color: 'red' }}>{error}</p>
+            <div className="homepage">
+                <div className="page-container" style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: 'calc(100vh - 80px)',
+                    marginTop: '80px',
+                    marginLeft: '2rem'
+                }}>
+                    <p style={{ color: 'red' }}>{error}</p>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="page-container" style={{ display: 'flex', height: 'calc(100vh - 100px)' }}>
-            {/* Left Section - Title and Map */}
-            <div className="left-section" style={{ flex: '1' }}>
-                {/* Title and Province Info Section */}
-                <div className="header-section" style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    marginBottom: '20px',
-                    gap: '30px'
-                }}>
-                    {/* Title */}
-                    <div className="title-section">
-                        <h2 className="mb-4">SaHa Türkiye Geneli Üye Haritası</h2>
-                        <p className="mb-3 text-gray-600">Üye profillerini görmek için bir ile tıklayın</p>
-                    </div>
-
-                    {/* Province Info Boxes */}
-                    <div className="province-info-boxes" style={{
-                        display: 'flex',
-                        gap: '15px',
-                        flex: '1'
-                    }}>
-                        {hoveredProvince ? (
-                            <div className="hovered-info" style={{
-                                flex: '1',
-                                padding: '10px',
-                                backgroundColor: 'white',
-                                borderRadius: '6px',
-                                border: '2px solid #ff6b35',
-                                minHeight: '60px'
-                            }}>
-                                <h4 style={{ margin: '0 0 4px 0', color: '#ff6b35', fontSize: '16px' }}>Üzerine Gelinen İl</h4>
-                                <p style={{ margin: '0', fontSize: '18px', fontWeight: 'bold' }}>
-                                    {hoveredProvince.name}
-                                </p>
-                                <p style={{ margin: '2px 0 0 0', color: '#666', fontSize: '14px' }}>
-                                    Plaka: {hoveredProvince.code}
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="hover-instruction" style={{
-                                flex: '1',
-                                padding: '10px',
-                                backgroundColor: 'white',
-                                borderRadius: '6px',
-                                border: '1px solid #ddd',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                minHeight: '60px'
-                            }}>
-                                <p style={{ margin: '0', color: '#666', fontSize: '14px', textAlign: 'center' }}>
-                                    Bir ilin üzerine gelin
-                                </p>
-                            </div>
-                        )}
-
-                        {selectedProvince ? (
-                            <div className="selected-info" style={{
-                                flex: '1',
-                                padding: '10px',
-                                backgroundColor: 'white',
-                                borderRadius: '6px',
-                                border: '2px solid #28a745',
-                                minHeight: '60px'
-                            }}>
-                                <h4 style={{ margin: '0 0 4px 0', color: '#28a745', fontSize: '16px' }}>Seçilen İl</h4>
-                                <p style={{ margin: '0', fontSize: '18px', fontWeight: 'bold' }}>
-                                    {selectedProvince.name}
-                                </p>
-                                <p style={{ margin: '2px 0 0 0', color: '#666', fontSize: '14px' }}>
-                                    Plaka: {selectedProvince.code} | Üye: {members.length}
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="click-instruction" style={{
-                                flex: '1',
-                                padding: '10px',
-                                backgroundColor: 'white',
-                                borderRadius: '6px',
-                                border: '1px solid #ddd',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                minHeight: '60px'
-                            }}>
-                                <p style={{ margin: '0', color: '#666', fontSize: '14px', textAlign: 'center' }}>
-                                    Bir ile tıklayın
-                                </p>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Map - Fixed Small Size */}
-                <div className="svg-turkiye-haritasi" ref={mapRef} style={{
-                    width: '100%'
-                }}>
-                    <TurkiyeHaritasi />
-                </div>
-            </div>
-
-            {/* Right Panel - Always Visible */}
-            <div className="members-section" style={{
-                width: '350px',
-                padding: '20px',
-                backgroundColor: '#f8f9fa',
-                borderRadius: '8px',
-                height: '100%',
-                overflowY: 'auto'
+        <div className="homepage">
+            <div className="page-container" style={{
+                display: 'flex',
+                height: 'calc(100vh - 80px)',
+                marginTop: '80px',
+                marginLeft: '2rem',
+                marginRight: '1rem'
             }}>
-                {selectedProvince ? (
-                    <>
-                        <h3 style={{ marginBottom: '15px', color: '#333' }}>
-                            {selectedProvince.name} ({selectedProvince.code}) İlinden Üyeler
-                        </h3>
-                        {members.length > 0 ? (
-                            <div className="members-list">
-                                <p style={{ marginBottom: '10px', color: '#666' }}>
-                                    Toplam {members.length} üye bulundu:
-                                </p>
-                                <ul style={{ listStyle: 'none', padding: 0 }}>
-                                    {members.map((member, index) => (
-                                        <li
-                                            key={index}
-                                            style={{
-                                                padding: '8px 12px',
-                                                margin: '4px 0',
-                                                backgroundColor: 'white',
-                                                borderRadius: '4px',
-                                                border: '1px solid #e0e0e0'
-                                            }}
-                                        >
-                                            <div style={{ fontWeight: 'bold' }}>{member.name}</div>
-                                            <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
-                                                {member.role === 'superadmin' ? 'Süper Admin' :
-                                                    member.role === 'admin' ? 'Admin' : 'Üye'}
-                                            </div>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        ) : (
-                            <p style={{ color: '#666', fontStyle: 'italic' }}>
-                                Bu ilden henüz kayıtlı üye bulunmamaktadır.
-                            </p>
-                        )}
-                    </>
-                ) : (
-                    <div style={{
+                {/* Left Section - Title and Map */}
+                <div className="left-section" style={{ flex: '1', paddingRight: '20px' }}>
+                    {/* Title and Province Info Section */}
+                    <div className="header-section" style={{
                         display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        height: '200px',
-                        textAlign: 'center'
+                        alignItems: 'flex-start',
+                        marginBottom: '20px',
+                        gap: '30px'
                     }}>
-                        <p style={{ color: '#999', fontSize: '16px' }}>
-                            Üye listesini görmek için<br/>bir ile tıklayın
-                        </p>
+                        {/* Title */}
+                        <div className="title-section">
+                            <h2 className="section-title mb-4">SaHa Türkiye Geneli Üye Haritası</h2>
+                            <p className="mb-3 text-gray-600">Üye profillerini görmek için bir ile tıklayın</p>
+                        </div>
+
+                        {/* Province Info Boxes */}
+                        <div className="province-info-boxes" style={{
+                            display: 'flex',
+                            gap: '15px',
+                            flex: '1',
+                            minWidth: '0'
+                        }}>
+                            {hoveredProvince ? (
+                                <div className="hovered-info card animate-fade-in" style={{
+                                    flex: '1',
+                                    padding: '20px',
+                                    border: '2px solid #ff6b35',
+                                    minHeight: '110px',
+                                    minWidth: '0',
+                                    overflow: 'hidden'
+                                }}>
+                                    <h4 style={{ margin: '0 0 4px 0', color: '#ff6b35', fontSize: '14px' }}>Üzerine Gelinen İl</h4>
+                                    <p style={{ margin: '0', fontSize: '16px', fontWeight: 'bold', lineHeight: '1.1', wordBreak: 'break-word' }}>
+                                        {hoveredProvince.name}
+                                    </p>
+                                    <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '14px' }}>
+                                        Plaka: {hoveredProvince.code}
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="hover-instruction card animate-fade-in" style={{
+                                    flex: '1',
+                                    padding: '20px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    minHeight: '110px',
+                                    minWidth: '0'
+                                }}>
+                                    <p style={{ margin: '0', color: '#666', fontSize: '12px', textAlign: 'center' }}>
+                                        Bir ilin üzerine gelin
+                                    </p>
+                                </div>
+                            )}
+
+                            {selectedProvince ? (
+                                <div className="selected-info card animate-fade-in" style={{
+                                    flex: '1',
+                                    padding: '20px',
+                                    border: '2px solid #28a745',
+                                    minHeight: '110px',
+                                    minWidth: '0',
+                                    overflow: 'hidden'
+                                }}>
+                                    <h4 style={{ margin: '0 0 4px 0', color: '#28a745', fontSize: '14px' }}>Seçilen İl</h4>
+                                    <p style={{ margin: '0', fontSize: '16px', fontWeight: 'bold', lineHeight: '1.1', wordBreak: 'break-word' }}>
+                                        {selectedProvince.name}
+                                    </p>
+                                    <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '14px' }}>
+                                        Plaka: {selectedProvince.code} | Üye: {members.length}
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="click-instruction card animate-fade-in" style={{
+                                    flex: '1',
+                                    padding: '20px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    minHeight: '110px',
+                                    minWidth: '0'
+                                }}>
+                                    <p style={{ margin: '0', color: '#666', fontSize: '12px', textAlign: 'center' }}>
+                                        Bir ile tıklayın
+                                    </p>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                )}
+
+                    {/* Map - Fixed Small Size */}
+                    <div className="svg-turkiye-haritasi" ref={mapRef} style={{
+                        width: '100%'
+                    }}>
+                        <TurkiyeHaritasi />
+                    </div>
+                </div>
+
+                {/* Right Panel - Full Height */}
+                <div className="members-section card animate-fade-in" style={{
+                    width: '350px',
+                    padding: '20px',
+                    height: 'calc(100vh - 120px)',
+                    overflowY: 'auto',
+                    margin: '0 0 20px 0'
+                }}>
+                    {selectedProvince ? (
+                        <>
+                            <h3 className="card-title" style={{ fontSize: '20px', marginBottom: '15px', color: 'var(--text-primary)' }}>
+                                {selectedProvince.name} ({selectedProvince.code}) İlinden Üyeler
+                            </h3>
+                            {members.length > 0 ? (
+                                <div className="members-list">
+                                    <p className="card-content" style={{ marginBottom: '10px', color: '#666' }}>
+                                        Toplam {members.length} üye bulundu:
+                                    </p>
+                                    <ul style={{ listStyle: 'none', padding: 0 }}>
+                                        {members.map((member, index) => (
+                                            <li
+                                                key={index}
+                                                className="card animate-fade-in"
+                                                style={{
+                                                    padding: '8px 12px',
+                                                    margin: '4px 0',
+                                                    border: '1px solid #e0e0e0'
+                                                }}
+                                            >
+                                                <div style={{ fontWeight: 'bold' }}>{member.name}</div>
+                                                <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
+                                                    {member.role === 'superadmin' ? 'Süper Admin' :
+                                                        member.role === 'admin' ? 'Admin' : 'Üye'}
+                                                </div>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ) : (
+                                <p className="card-content" style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                                    Bu ilden henüz kayıtlı üye bulunmamaktadır.
+                                </p>
+                            )}
+                        </>
+                    ) : (
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            height: '200px',
+                            textAlign: 'center'
+                        }}>
+                            <p className="card-content" style={{ color: '#999', fontSize: '16px' }}>
+                                Üye listesini görmek için<br/>bir ile tıklayın
+                            </p>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
