@@ -13,6 +13,7 @@ import './App.css';
 function App() {
     const { user, logout } = useContext(AuthContext);
 
+    
     // Function to get CSRF token
     const getCSRFToken = () => {
         let cookieValue = null;
