@@ -1,9 +1,9 @@
 import React, { useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
-import HomePage from './pages/HomePage';
+import UyelerdenHaberlerPage from './pages/UyelerdenHaberlerPage';
 import LoginPage from './pages/LoginPage';
 import MapPage from './pages/MapPage';
-import EditProfilePage from './pages/EditProfilePage';
+import ProfilePage from './pages/ProfilePage';
 import SahadanHaberlerPage from './pages/SahadanHaberlerPage';
 import MakalelerPage from './pages/MakalelerPage';
 import { AuthContext } from './context/AuthContext';
@@ -56,8 +56,8 @@ function App() {
 
                 <main className="main-content" style={{ paddingTop: '12px', padding: '12px 1rem 0 1rem' }}>
                     <Routes>
-                        <Route path="/" element={user ? <EditProfilePage /> : <Navigate to="/login" replace />} />
-                        <Route path="/uyelerden-haberler" element={<HomePage />} />
+                        <Route path="/" element={user ? <ProfilePage /> : <Navigate to="/login" replace />} />
+                        <Route path="/uyelerden-haberler" element={<UyelerdenHaberlerPage />} />
                         <Route path="/sahadan-haberler" element={<SahadanHaberlerPage />} />
                         <Route path="/makaleler" element={<MakalelerPage />} />
                         <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/" replace />} />

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ReactComponent as TurkiyeHaritasi } from '../assets/TurkiyeHaritasi.svg';
 import axiosInstance from '../api/axios';
@@ -147,7 +147,7 @@ const MapPage = () => {
     };
 
     // Get members by province name
-    const getMembersByProvince = (plateCode, provinceName) => {
+    const getMembersByProvince = useCallback((plateCode, provinceName) => {
         // Direct match first
         if (cityUsersData[provinceName]) {
             return cityUsersData[provinceName];
@@ -174,17 +174,17 @@ const MapPage = () => {
         }
 
         return [];
-    };
+    }, [cityUsersData]);
 
     // Handle province click - show member names
-    const handleProvinceClick = (plateCode, provinceName) => {
+    const handleProvinceClick = useCallback((plateCode, provinceName) => {
         // Set selected province info
         setSelectedProvince({ code: plateCode, name: provinceName });
 
         // Get members for this province from database
         const provinceMembers = getMembersByProvince(plateCode, provinceName);
         setMembers(provinceMembers);
-    };
+    }, [getMembersByProvince]);
 
     useEffect(() => {
         // Only set up event listeners after data is loaded
@@ -264,7 +264,6 @@ const MapPage = () => {
                 event.preventDefault();
 
                 const parent = event.target.parentNode;
-                const id = parent?.getAttribute('id') || event.target.getAttribute('id');
                 let plakaKodu = parent?.getAttribute('data-plakakodu') || event.target.getAttribute('data-plakakodu');
                 let ilAdi = parent?.getAttribute('data-iladi') || event.target.getAttribute('data-iladi');
 
@@ -315,7 +314,9 @@ const MapPage = () => {
 
         return () => {
             clearTimeout(timeoutId);
-            const element = mapRef.current?.svgElement;
+            // Copy the ref value to avoid stale closure issue
+            const currentMapRef = mapRef.current;
+            const element = currentMapRef?.svgElement;
             if (element) {
                 element.removeEventListener('mouseover', handleMouseOver);
                 element.removeEventListener('mousemove', handleMouseMove);
@@ -323,7 +324,7 @@ const MapPage = () => {
                 element.removeEventListener('click', handleClick);
             }
         };
-    }, [navigate, cityUsersData]);
+    }, [navigate, cityUsersData, handleProvinceClick, provinces]);
 
     if (loading) {
         return (

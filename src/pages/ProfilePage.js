@@ -1,17 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const EditProfilePage = () => {
+// Fallback cities list in case API fails
+const fallbackCities = [
+    'Adana', 'Adıyaman', 'Afyonkarahisar', 'Ağrı', 'Aksaray', 'Amasya', 'Ankara', 'Antalya',
+    'Ardahan', 'Artvin', 'Aydın', 'Balıkesir', 'Bartın', 'Batman', 'Bayburt', 'Bilecik',
+    'Bingöl', 'Bitlis', 'Bolu', 'Burdur', 'Bursa', 'Çanakkale', 'Çankırı', 'Çorum',
+    'Denizli', 'Diyarbakır', 'Düzce', 'Edirne', 'Elazığ', 'Erzincan', 'Erzurum', 'Eskişehir',
+    'Gaziantep', 'Giresun', 'Gümüşhane', 'Hakkâri', 'Hatay', 'Iğdır', 'Isparta', 'İstanbul',
+    'İzmir', 'Kahramanmaraş', 'Karabük', 'Karaman', 'Kars', 'Kastamonu', 'Kayseri', 'Kilis',
+    'Kırıkkale', 'Kırklareli', 'Kırşehir', 'Kocaeli', 'Konya', 'Kütahya', 'Malatya', 'Manisa',
+    'Mardin', 'Mersin', 'Muğla', 'Muş', 'Nevşehir', 'Niğde', 'Ordu', 'Osmaniye', 'Rize',
+    'Sakarya', 'Samsun', 'Siirt', 'Sinop', 'Sivas', 'Şanlıurfa', 'Şırnak', 'Tekirdağ',
+    'Tokat', 'Trabzon', 'Tunceli', 'Uşak', 'Van', 'Yalova', 'Yozgat', 'Zonguldak'
+];
+
+const ProfilePage = () => {
     const navigate = useNavigate();
     const { user, updateProfile, changePassword, loading: authLoading, error: authError, isAuthenticated } = useAuth();
 
     const [profileData, setProfileData] = useState({
         first_name: '',
         last_name: '',
-        city: '',
+        email: '',
         phone: '',
-        email: ''
+        city: '',
+        ilce: '',
+        mahalle: ''
     });
 
     const [passwordData, setPasswordData] = useState({
@@ -28,19 +44,102 @@ const EditProfilePage = () => {
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-    // Turkish cities list (same as register page)
-    const cities = [
-        'Adana', 'Adıyaman', 'Afyonkarahisar', 'Ağrı', 'Aksaray', 'Amasya', 'Ankara', 'Antalya',
-        'Ardahan', 'Artvin', 'Aydın', 'Balıkesir', 'Bartın', 'Batman', 'Bayburt', 'Bilecik',
-        'Bingöl', 'Bitlis', 'Bolu', 'Burdur', 'Bursa', 'Çanakkale', 'Çankırı', 'Çorum',
-        'Denizli', 'Diyarbakır', 'Düzce', 'Edirne', 'Elazığ', 'Erzincan', 'Erzurum', 'Eskişehir',
-        'Gaziantep', 'Giresun', 'Gümüşhane', 'Hakkâri', 'Hatay', 'Iğdır', 'Isparta', 'İstanbul',
-        'İzmir', 'Kahramanmaraş', 'Karabük', 'Karaman', 'Kars', 'Kastamonu', 'Kayseri', 'Kilis',
-        'Kırıkkale', 'Kırklareli', 'Kırşehir', 'Kocaeli', 'Konya', 'Kütahya', 'Malatya', 'Manisa',
-        'Mardin', 'Mersin', 'Muğla', 'Muş', 'Nevşehir', 'Niğde', 'Ordu', 'Osmaniye', 'Rize',
-        'Sakarya', 'Samsun', 'Siirt', 'Sinop', 'Sivas', 'Şanlıurfa', 'Şırnak', 'Tekirdağ',
-        'Tokat', 'Trabzon', 'Tunceli', 'Uşak', 'Van', 'Yalova', 'Yozgat', 'Zonguldak'
-    ];
+    // Location data - loaded from API
+    const [cities, setCities] = useState([]);
+    const [districtsByCity, setDistrictsByCity] = useState({});
+    const [neighborhoodsByDistrict, setNeighborhoodsByDistrict] = useState({});
+
+    // API functions for location data
+    const fetchCities = async () => {
+        try {
+            console.log('Fetching cities from API...');
+            const response = await fetch('http://localhost:8000/api/locations/cities/', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+            console.log('Cities API response status:', response.status);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('Cities API response data:', data);
+            if (data.success && data.cities) {
+                console.log('Setting cities:', data.cities.length, 'cities');
+                setCities(data.cities);
+                return true; // Success
+            } else {
+                console.error('Cities API returned success: false or no cities');
+                return false; // Failed
+            }
+        } catch (error) {
+            console.error('Error fetching cities:', error);
+            return false; // Failed
+        }
+    };
+
+    const fetchDistricts = useCallback(async (cityName) => {
+        try {
+            // Set an empty list immediately so UI updates while fetching
+            setDistrictsByCity(prev => ({ ...prev, [cityName]: [] }));
+
+            const response = await fetch(`http://localhost:8000/api/locations/districts/${encodeURIComponent(cityName)}/`);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            if (data.success) {
+                setDistrictsByCity(prev => ({
+                    ...prev,
+                    [cityName]: data.districts
+                }));
+            } else {
+                console.error('Error fetching districts: success false', data);
+            }
+        } catch (error) {
+            console.error('Error fetching districts:', error);
+            // keep empty array (no districts)
+            setDistrictsByCity(prev => ({ ...prev, [cityName]: [] }));
+        }
+    }, []);
+
+    const fetchNeighborhoods = useCallback(async (cityName, districtName) => {
+        try {
+            // Initialize empty list for district while fetching
+            setNeighborhoodsByDistrict(prev => ({ ...prev, [districtName]: [] }));
+
+            const response = await fetch(`http://localhost:8000/api/locations/neighborhoods/${encodeURIComponent(cityName)}/${encodeURIComponent(districtName)}/`);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            if (data.success) {
+                setNeighborhoodsByDistrict(prev => ({
+                    ...prev,
+                    [districtName]: data.neighborhoods
+                }));
+            } else {
+                console.error('Error fetching neighborhoods: success false', data);
+            }
+        } catch (error) {
+            console.error('Error fetching neighborhoods:', error);
+            setNeighborhoodsByDistrict(prev => ({ ...prev, [districtName]: [] }));
+        }
+    }, []);
+
+
+
+    // Load cities on component mount
+    useEffect(() => {
+        const loadCities = async () => {
+            const success = await fetchCities();
+            // If API failed, use fallback
+            if (!success) {
+                console.log('Using fallback cities list');
+                setCities(fallbackCities);
+            }
+        };
+        loadCities();
+    }, []);
 
     // Check authentication and redirect if not authenticated
     useEffect(() => {
@@ -50,25 +149,76 @@ const EditProfilePage = () => {
         }
     }, [isAuthenticated, authLoading, navigate]);
 
-    // Populate form with user data when user is loaded
+    // Populate form with user data when user is loaded (only when user changes)
     useEffect(() => {
         if (user) {
             setProfileData({
                 first_name: user.first_name || '',
                 last_name: user.last_name || '',
-                city: user.city || '',
+                email: user.email || '',
                 phone: user.phone || '',
-                email: user.email || ''
+                city: user.city || '',
+                ilce: user.ilce || '',
+                mahalle: user.mahalle || ''
             });
         }
     }, [user]);
 
+    // Load initial location data separately (only when user changes)
+    useEffect(() => {
+        if (user && user.city) {
+            // Load districts for user's city if not already loaded
+            if (!districtsByCity[user.city]) {
+                fetchDistricts(user.city);
+            }
+            // Load neighborhoods for user's district if not already loaded
+            if (user.ilce && !neighborhoodsByDistrict[user.ilce]) {
+                fetchNeighborhoods(user.city, user.ilce);
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user]);
+
     const handleProfileInputChange = (e) => {
         const { name, value } = e.target;
-        setProfileData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        console.log('handleProfileInputChange:', name, '=', value);
+        
+        // Handle cascading dropdown logic
+        if (name === 'city') {
+            setProfileData(prev => ({
+                ...prev,
+                [name]: value,
+                ilce: '',  // Reset district when city changes
+                mahalle: ''  // Reset neighborhood when city changes
+            }));
+            // Fetch districts for the selected city
+            if (value && !districtsByCity[value]) {
+                fetchDistricts(value);
+            }
+        } else if (name === 'ilce') {
+            console.log('Setting ilce to:', value, 'previous data:', profileData);
+            setProfileData(prev => {
+                const newData = {
+                    ...prev,
+                    [name]: value,
+                    mahalle: ''  // Reset neighborhood when district changes
+                };
+                console.log('New profile data after ilce change:', newData);
+                return newData;
+            });
+            // Fetch neighborhoods for the selected district
+            // Determine current city value (in case city was changed just before selecting ilce)
+            const currentCity = document.getElementById('city')?.value || profileData.city || '';
+            console.log('Fetching neighborhoods for city:', currentCity, 'district:', value);
+            if (value && currentCity && !neighborhoodsByDistrict[value]) {
+                fetchNeighborhoods(currentCity, value);
+            }
+        } else {
+            setProfileData(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        }
 
         // Clear specific error when user starts typing
         if (errors[name]) {
@@ -135,6 +285,16 @@ const EditProfilePage = () => {
             newErrors.email = 'Lütfen geçerli bir e-posta adresi giriniz';
         }
 
+        // İlçe validation
+        if (!profileData.ilce) {
+            newErrors.ilce = 'Lütfen ilçe seçiniz';
+        }
+
+        // Mahalle validation
+        if (!profileData.mahalle) {
+            newErrors.mahalle = 'Lütfen mahalle seçiniz';
+        }
+
         return newErrors;
     };
 
@@ -187,14 +347,14 @@ const EditProfilePage = () => {
             const result = await updateProfile(profileData);
 
             if (result.success) {
-                setSuccessMessage('Profil bilgileriniz başarıyla güncellendi! Ana sayfaya yönlendiriliyorsunuz...');
+                setSuccessMessage('Profil bilgileriniz başarıyla güncellendi!');
                 // Clear any previous errors
                 setErrors({});
 
-                // Redirect to homepage after half a second
+                // Refresh the page after a short delay
                 setTimeout(() => {
-                    navigate('/');
-                }, 500);
+                    window.location.reload();
+                }, 1000);
             } else {
                 // Handle errors from the updateProfile function
                 if (result.errors) {
@@ -345,9 +505,9 @@ const EditProfilePage = () => {
             <div className="edit-profile-container">
                 <div className="edit-profile-card">
                     <div className="edit-profile-header">
-                        <h2 className="edit-profile-title">Profil Düzenle</h2>
+                        <h2 className="edit-profile-title">Profilim</h2>
                         <p className="edit-profile-subtitle">
-                            Bilgilerinizi güncelleyin
+                            Bilgilerinizi görüntüleyin
                         </p>
                     </div>
 
@@ -366,7 +526,23 @@ const EditProfilePage = () => {
                                 <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                                 <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
-                            Profil Bilgileri
+                            Kişisel Bilgiler
+                        </button>
+                        <button
+                            className={`tab-button ${activeTab === 'about' ? 'active' : ''}`}
+                            onClick={() => {
+                                setActiveTab('about');
+                                setErrors({});
+                                setSuccessMessage('');
+                            }}
+                            type="button"
+                        >
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                                <path d="M9.09 9C9.3251 8.33167 9.78915 7.76811 10.4 7.40913C11.0108 7.05016 11.7289 6.91894 12.4272 7.03871C13.1255 7.15849 13.7588 7.52152 14.2151 8.06353C14.6713 8.60553 14.9211 9.29152 14.92 10C14.92 12 11.92 13 11.92 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M12 17H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            Hakkımda
                         </button>
                         <button
                             className={`tab-button ${activeTab === 'password' ? 'active' : ''}`}
@@ -468,7 +644,61 @@ const EditProfilePage = () => {
                                     </div>
                                 </div>
 
-                                {/* City and Phone Row */}
+                                {/* Email and Phone Row */}
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label htmlFor="email" className="form-label">
+                                            E-posta
+                                            <span className="required">*</span>
+                                        </label>
+                                        <div className="input-wrapper">
+                                            <svg className="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                                <polyline points="22,6 12,13 2,6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            </svg>
+                                            <input
+                                                type="email"
+                                                id="email"
+                                                name="email"
+                                                className={`form-input ${errors.email ? 'error' : ''}`}
+                                                value={profileData.email}
+                                                onChange={handleProfileInputChange}
+                                                disabled={loading}
+                                                placeholder="E-posta adresinizi giriniz"
+                                            />
+                                        </div>
+                                        <div className="field-error">
+                                            {errors.email || ''}
+                                        </div>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label htmlFor="phone" className="form-label">
+                                            Telefon
+                                            <span className="required">*</span>
+                                        </label>
+                                        <div className="input-wrapper">
+                                            <svg className="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M22 16.92V19.92C22.0011 20.1985 21.9441 20.4742 21.8325 20.7293C21.7209 20.9845 21.5573 21.2136 21.3521 21.4019C21.1468 21.5901 20.9046 21.7335 20.6407 21.8227C20.3769 21.9119 20.0974 21.9451 19.82 21.92C16.7428 21.5856 13.787 20.5341 11.19 18.85C8.77382 17.3147 6.72533 15.2662 5.18999 12.85C3.49997 10.2412 2.44824 7.27099 2.11999 4.18C2.095 3.90347 2.12787 3.62476 2.21649 3.36162C2.30512 3.09849 2.44756 2.85669 2.63476 2.65162C2.82196 2.44655 3.0498 2.28271 3.30379 2.17052C3.55777 2.05833 3.83233 2.00026 4.10999 2H7.10999C7.59344 1.99522 8.06456 2.16708 8.43415 2.48353C8.80373 2.79999 9.04344 3.23945 9.10999 3.72C9.23662 4.68007 9.47144 5.62273 9.80999 6.53C9.94454 6.88792 9.97366 7.27691 9.8939 7.65088C9.81415 8.02485 9.62886 8.36811 9.35999 8.64L8.08999 9.91C9.51355 12.4135 11.5865 14.4864 14.09 15.91L15.36 14.64C15.6319 14.3711 15.9751 14.1858 16.3491 14.1061C16.7231 14.0263 17.1121 14.0555 17.47 14.19C18.3773 14.5286 19.3199 14.7634 20.28 14.89C20.7658 14.9585 21.2094 15.2032 21.5265 15.5775C21.8437 15.9518 22.0122 16.4296 22 16.92Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            </svg>
+                                            <input
+                                                type="tel"
+                                                id="phone"
+                                                name="phone"
+                                                className={`form-input ${errors.phone ? 'error' : ''}`}
+                                                value={profileData.phone}
+                                                onChange={handleProfileInputChange}
+                                                disabled={loading}
+                                                placeholder="05xx xxx xx xx"
+                                            />
+                                        </div>
+                                        <div className="field-error">
+                                            {errors.phone || ''}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* City and İlçe Row */}
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label htmlFor="city" className="form-label">
@@ -500,55 +730,66 @@ const EditProfilePage = () => {
                                     </div>
 
                                     <div className="form-group">
-                                        <label htmlFor="phone" className="form-label">
-                                            Telefon
+                                        <label htmlFor="ilce" className="form-label">
+                                            İlçe
                                             <span className="required">*</span>
                                         </label>
                                         <div className="input-wrapper">
                                             <svg className="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <path d="M22 16.92V19.92C22.0011 20.1985 21.9441 20.4742 21.8325 20.7293C21.7209 20.9845 21.5573 21.2136 21.3521 21.4019C21.1468 21.5901 20.9046 21.7335 20.6407 21.8227C20.3769 21.9119 20.0974 21.9451 19.82 21.92C16.7428 21.5856 13.787 20.5341 11.19 18.85C8.77382 17.3147 6.72533 15.2662 5.18999 12.85C3.49997 10.2412 2.44824 7.27099 2.11999 4.18C2.095 3.90347 2.12787 3.62476 2.21649 3.36162C2.30512 3.09849 2.44756 2.85669 2.63476 2.65162C2.82196 2.44655 3.0498 2.28271 3.30379 2.17052C3.55777 2.05833 3.83233 2.00026 4.10999 2H7.10999C7.59344 1.99522 8.06456 2.16708 8.43415 2.48353C8.80373 2.79999 9.04344 3.23945 9.10999 3.72C9.23662 4.68007 9.47144 5.62273 9.80999 6.53C9.94454 6.88792 9.97366 7.27691 9.8939 7.65088C9.81415 8.02485 9.62886 8.36811 9.35999 8.64L8.08999 9.91C9.51355 12.4135 11.5865 14.4864 14.09 15.91L15.36 14.64C15.6319 14.3711 15.9751 14.1858 16.3491 14.1061C16.7231 14.0263 17.1121 14.0555 17.47 14.19C18.3773 14.5286 19.3199 14.7634 20.28 14.89C20.7658 14.9585 21.2094 15.2032 21.5265 15.5775C21.8437 15.9518 22.0122 16.4296 22 16.92Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                                <path d="M21 10C21 17 12 23 12 23S3 17 3 10C3 7.61305 3.94821 5.32387 5.63604 3.63604C7.32387 1.94821 9.61305 1 12 1C14.3869 1 16.6761 1.94821 18.3639 3.63604C20.0518 5.32387 21 7.61305 21 10Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                                <circle cx="12" cy="10" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                                             </svg>
-                                            <input
-                                                type="tel"
-                                                id="phone"
-                                                name="phone"
-                                                className={`form-input ${errors.phone ? 'error' : ''}`}
-                                                value={profileData.phone}
+                                            <select
+                                                id="ilce"
+                                                name="ilce"
+                                                className={`form-select ${errors.ilce ? 'error' : ''}`}
+                                                value={profileData.ilce}
                                                 onChange={handleProfileInputChange}
-                                                disabled={loading}
-                                                placeholder="05xx xxx xx xx"
-                                            />
+                                                disabled={loading || !profileData.city}
+                                            >
+                                                <option value="">İlçe seçiniz</option>
+                                                {profileData.city && districtsByCity[profileData.city] && 
+                                                    districtsByCity[profileData.city].map(district => (
+                                                        <option key={district} value={district}>{district}</option>
+                                                    ))
+                                                }
+                                            </select>
                                         </div>
                                         <div className="field-error">
-                                            {errors.phone || ''}
+                                            {errors.ilce || ''}
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Email */}
+                                {/* Mahalle */}
                                 <div className="form-group">
-                                    <label htmlFor="email" className="form-label">
-                                        E-posta Adresi
+                                    <label htmlFor="mahalle" className="form-label">
+                                        Mahalle
                                         <span className="required">*</span>
                                     </label>
                                     <div className="input-wrapper">
                                         <svg className="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                            <polyline points="22,6 12,13 2,6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            <path d="M21 10C21 17 12 23 12 23S3 17 3 10C3 7.61305 3.94821 5.32387 5.63604 3.63604C7.32387 1.94821 9.61305 1 12 1C14.3869 1 16.6761 1.94821 18.3639 3.63604C20.0518 5.32387 21 7.61305 21 10Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            <circle cx="12" cy="10" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                                         </svg>
-                                        <input
-                                            type="email"
-                                            id="email"
-                                            name="email"
-                                            className={`form-input ${errors.email ? 'error' : ''}`}
-                                            value={profileData.email}
+                                        <select
+                                            id="mahalle"
+                                            name="mahalle"
+                                            className={`form-select ${errors.mahalle ? 'error' : ''}`}
+                                            value={profileData.mahalle}
                                             onChange={handleProfileInputChange}
-                                            disabled={loading}
-                                            placeholder="E-posta adresinizi giriniz"
-                                        />
+                                            disabled={loading || !profileData.ilce}
+                                        >
+                                            <option value="">Mahalle seçiniz</option>
+                                            {profileData.ilce && neighborhoodsByDistrict[profileData.ilce] && 
+                                                neighborhoodsByDistrict[profileData.ilce].map(neighborhood => (
+                                                    <option key={neighborhood} value={neighborhood}>{neighborhood}</option>
+                                                ))
+                                            }
+                                        </select>
                                     </div>
                                     <div className="field-error">
-                                        {errors.email || ''}
+                                        {errors.mahalle || ''}
                                     </div>
                                 </div>
 
@@ -587,6 +828,58 @@ const EditProfilePage = () => {
                                     </button>
                                 </div>
                             </form>
+                        </div>
+                    )}
+
+                    {/* About Tab Content */}
+                    {activeTab === 'about' && (
+                        <div className="edit-profile-form">
+                            <div className="about-content">
+                                <div className="about-section">
+                                    <h3 className="about-title">Hakkımda</h3>
+                                    <p className="about-description">
+                                        Bu bölüm geliştirilme aşamasındadır. Yakında kişisel bilgilerinizi ve 
+                                        deneyimlerinizi paylaşabileceğiniz bir alan burada yer alacaktır.
+                                    </p>
+                                </div>
+                                
+                                <div className="about-features">
+                                    <div className="feature-item">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
+                                        <div>
+                                            <h4>Kişisel Hikaye</h4>
+                                            <p>Kendi hikayenizi ve deneyimlerinizi paylaşın</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="feature-item">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            <path d="M23 21V19C23 18.1645 22.7155 17.3541 22.2094 16.7006C21.7033 16.047 20.9999 15.5904 20.2 15.405" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            <path d="M16 3.13C16.8003 3.31462 17.5037 3.77096 18.0098 4.42459C18.5159 5.07823 18.8002 5.88868 18.8002 6.725C18.8002 7.56132 18.5159 8.37177 18.0098 9.02541C17.5037 9.67904 16.8003 10.1354 16 10.32" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
+                                        <div>
+                                            <h4>Sosyal Bağlantılar</h4>
+                                            <p>Diğer üyelerle bağlantı kurun ve ağınızı genişletin</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="feature-item">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M9 11C11.2091 11 13 9.20914 13 7C13 4.79086 11.2091 3 9 3C6.79086 3 5 4.79086 5 7C5 9.20914 6.79086 11 9 11Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            <path d="M21 21V19C21 16.7909 19.2091 15 17 15H1V19C1 21.2091 2.79086 23 5 23H17C19.2091 23 21 21.2091 21 19V21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            <path d="M16 3.13C16.8003 3.31462 17.5037 3.77096 18.0098 4.42459C18.5159 5.07823 18.8002 5.88868 18.8002 6.725C18.8002 7.56132 18.5159 8.37177 18.0098 9.02541C17.5037 9.67904 16.8003 10.1354 16 10.32" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
+                                        <div>
+                                            <h4>İlgi Alanları</h4>
+                                            <p>İlgi alanlarınızı ve uzmanlık konularınızı belirtin</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     )}
 
@@ -1075,6 +1368,73 @@ const EditProfilePage = () => {
                     to { transform: rotate(360deg); }
                 }
 
+                /* About Tab Styles */
+                .about-content {
+                    padding: 1rem 0;
+                }
+
+                .about-section {
+                    text-align: center;
+                    margin-bottom: 3rem;
+                }
+
+                .about-title {
+                    font-size: 1.5rem;
+                    font-weight: 600;
+                    color: var(--text-primary);
+                    margin-bottom: 1rem;
+                }
+
+                .about-description {
+                    color: var(--text-muted);
+                    font-size: 1rem;
+                    line-height: 1.6;
+                    max-width: 600px;
+                    margin: 0 auto;
+                }
+
+                .about-features {
+                    display: grid;
+                    gap: 2rem;
+                }
+
+                .feature-item {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 1rem;
+                    padding: 1.5rem;
+                    background: rgba(255, 255, 255, 0.03);
+                    border: 1px solid var(--border-primary);
+                    border-radius: var(--radius-sm);
+                    transition: all var(--transition-normal);
+                }
+
+                .feature-item:hover {
+                    background: rgba(255, 255, 255, 0.05);
+                    border-color: var(--border-accent);
+                    transform: translateY(-2px);
+                }
+
+                .feature-item svg {
+                    color: var(--primary-blue);
+                    flex-shrink: 0;
+                    margin-top: 0.25rem;
+                }
+
+                .feature-item h4 {
+                    color: var(--text-primary);
+                    font-size: 1.1rem;
+                    font-weight: 600;
+                    margin: 0 0 0.5rem 0;
+                }
+
+                .feature-item p {
+                    color: var(--text-muted);
+                    font-size: 0.9rem;
+                    line-height: 1.5;
+                    margin: 0;
+                }
+
                 @media (max-width: 768px) {
                     .edit-profile-card {
                         padding: 2rem 1.5rem;
@@ -1134,4 +1494,4 @@ const EditProfilePage = () => {
     );
 };
 
-export default EditProfilePage;
+export default ProfilePage;

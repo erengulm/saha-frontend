@@ -1,8 +1,8 @@
 import React from 'react';
 
-export default function HomePage() {
+export default function UyelerdenHaberlerPage() {
     return (
-        <div className="homepage">
+        <div className="uyelerden-haberler-page">
             {/* Blank page with background only */}
             <div style={{ 
                 minHeight: '100vh', 
