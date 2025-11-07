@@ -81,9 +81,9 @@ const LoginPage = () => {
 
             if (result?.success) {
                 setSuccessMessage('Giriş başarılı! Yönlendiriliyorsunuz...');
-                // Navigate to map page after successful login
+                // Navigate to profile page after successful login
                 setTimeout(() => {
-                    window.location.href = '/map'; // Simple redirect - replace with your router navigation
+                    window.location.href = '/'; // Simple redirect - replace with your router navigation
                 }, 1000);
             } else {
                 // Handle errors from the login result

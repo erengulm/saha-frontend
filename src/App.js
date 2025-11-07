@@ -5,6 +5,8 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import MapPage from './pages/MapPage';
 import EditProfilePage from './pages/EditProfilePage';
+import SahadanHaberlerPage from './pages/SahadanHaberlerPage';
+import MakalelerPage from './pages/MakalelerPage';
 import { AuthContext } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import axios from 'axios';
@@ -55,11 +57,13 @@ function App() {
 
                 <main className="main-content" style={{ paddingTop: '12px', padding: '12px 1rem 0 1rem' }}>
                     <Routes>
-                        <Route path="/" element={<HomePage />} />
-                        <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/map" replace />} />
+                        <Route path="/" element={user ? <EditProfilePage /> : <Navigate to="/login" replace />} />
+                        <Route path="/uyelerden-haberler" element={<HomePage />} />
+                        <Route path="/sahadan-haberler" element={<SahadanHaberlerPage />} />
+                        <Route path="/makaleler" element={<MakalelerPage />} />
+                        <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/" replace />} />
                         <Route path="/register" element={!user ? <RegisterPage /> : <Navigate to="/login" replace />} />
                         <Route path="/map" element={user ? <MapPage /> : <Navigate to="/login" replace />} />
-                        <Route path="/edit-profile" element={user ? <EditProfilePage /> : <Navigate to="/login" replace />} />
                         <Route path="*" element={
                             <div className="error-page">
                                 <div className="content-section">
