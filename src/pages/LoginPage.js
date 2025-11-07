@@ -11,7 +11,7 @@ const LoginPage = () => {
     const [successMessage, setSuccessMessage] = useState('');
     const [showPassword, setShowPassword] = useState(false);
 
-    const { login, loading: authLoading, error: authError, clearError } = useContext(AuthContext);
+    const { login, error: authError, clearError } = useContext(AuthContext);
 
     useEffect(() => {
         // Clear any previous auth errors when component mounts
