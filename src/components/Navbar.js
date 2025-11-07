@@ -40,207 +40,155 @@ export default function Navbar({ user, logout }) {
                     </NavLink>
 
                     {/* Desktop Navigation */}
-                    <ul className="nav-links desktop-nav">
-                        <li>
-                            <NavLink
-                                to="/sahadan-haberler"
-                                className={({ isActive }) =>
-                                    `nav-link ${isActive ? 'nav-link-active' : ''}`
-                                }
-                            >
-                                Sahadan Haberler
-                            </NavLink>
-                        </li>
-                        <li>
-                            <NavLink
-                                to="/uyelerden-haberler"
-                                className={({ isActive }) =>
-                                    `nav-link ${isActive ? 'nav-link-active' : ''}`
-                                }
-                            >
-                                Üyelerden Haberler
-                            </NavLink>
-                        </li>
-                        <li>
-                            <NavLink
-                                to="/makaleler"
-                                className={({ isActive }) =>
-                                    `nav-link ${isActive ? 'nav-link-active' : ''}`
-                                }
-                            >
-                                Makaleler
-                            </NavLink>
-                        </li>
-
-                        {user ? (
-                            <>
-                                <li>
-                                    <NavLink
-                                        to="/map"
-                                        className={({ isActive }) =>
-                                            `nav-link ${isActive ? 'nav-link-active' : ''}`
-                                        }
-                                    >
-                                        Harita
-                                    </NavLink>
-                                </li>
-                                <li>
-                                    <NavLink
-                                        to="/"
-                                        end
-                                        className={({ isActive }) =>
-                                            `nav-link ${isActive ? 'nav-link-active' : ''}`
-                                        }
-                                    >
-                                        Profilim
-                                    </NavLink>
-                                </li>
-                                <li>
-                                    <button
-                                        onClick={handleLogout}
-                                        className="nav-button nav-button-secondary"
-                                    >
-                                        Çıkış Yap
-                                    </button>
-                                </li>
-                            </>
-                        ) : (
-                            <>
-                                <li>
-                                    <NavLink
-                                        to="/login"
-                                        className={({ isActive }) =>
-                                            `nav-link ${isActive ? 'nav-link-active' : ''}`
-                                        }
-                                    >
-                                        Giriş Yap
-                                    </NavLink>
-                                </li>
-                                <li>
-                                    <NavLink
-                                        to="/register"
-                                        className={({ isActive }) =>
-                                            `nav-link ${isActive ? 'nav-link-active' : ''}`
-                                        }
-                                    >
-                                        Kayıt Ol
-                                    </NavLink>
-                                </li>
-                            </>
-                        )}
-                    </ul>
+                    {user && (
+                        <ul className="nav-links desktop-nav">
+                            <li>
+                                <NavLink
+                                    to="/sahadan-haberler"
+                                    className={({ isActive }) =>
+                                        `nav-link ${isActive ? 'nav-link-active' : ''}`
+                                    }
+                                >
+                                    SaHa'dan Haberler
+                                </NavLink>
+                            </li>
+                            <li>
+                                <NavLink
+                                    to="/uyelerden-haberler"
+                                    className={({ isActive }) =>
+                                        `nav-link ${isActive ? 'nav-link-active' : ''}`
+                                    }
+                                >
+                                    Üyelerden Haberler
+                                </NavLink>
+                            </li>
+                            <li>
+                                <NavLink
+                                    to="/makaleler"
+                                    className={({ isActive }) =>
+                                        `nav-link ${isActive ? 'nav-link-active' : ''}`
+                                    }
+                                >
+                                    Makaleler
+                                </NavLink>
+                            </li>
+                            <li>
+                                <NavLink
+                                    to="/map"
+                                    className={({ isActive }) =>
+                                        `nav-link ${isActive ? 'nav-link-active' : ''}`
+                                    }
+                                >
+                                    Harita
+                                </NavLink>
+                            </li>
+                            <li>
+                                <NavLink
+                                    to="/"
+                                    end
+                                    className={({ isActive }) =>
+                                        `nav-link ${isActive ? 'nav-link-active' : ''}`
+                                    }
+                                >
+                                    Profilim
+                                </NavLink>
+                            </li>
+                            <li>
+                                <button
+                                    onClick={handleLogout}
+                                    className="nav-button nav-button-secondary"
+                                >
+                                    Çıkış Yap
+                                </button>
+                            </li>
+                        </ul>
+                    )}
 
                     {/* Mobile Menu Toggle */}
-                    <button
-                        className="mobile-menu-toggle"
-                        onClick={toggleMobileMenu}
-                        aria-label="Menüyü aç/kapat"
-                    >
-                        <span className={`hamburger-line ${isMobileMenuOpen ? 'open' : ''}`}></span>
-                        <span className={`hamburger-line ${isMobileMenuOpen ? 'open' : ''}`}></span>
-                        <span className={`hamburger-line ${isMobileMenuOpen ? 'open' : ''}`}></span>
-                    </button>
+                    {user && (
+                        <button
+                            className="mobile-menu-toggle"
+                            onClick={toggleMobileMenu}
+                            aria-label="Menüyü aç/kapat"
+                        >
+                            <span className={`hamburger-line ${isMobileMenuOpen ? 'open' : ''}`}></span>
+                            <span className={`hamburger-line ${isMobileMenuOpen ? 'open' : ''}`}></span>
+                            <span className={`hamburger-line ${isMobileMenuOpen ? 'open' : ''}`}></span>
+                        </button>
+                    )}
                 </div>
 
                 {/* Mobile Navigation */}
-                <div className={`mobile-nav ${isMobileMenuOpen ? 'mobile-nav-open' : ''}`}>
-                    <ul className="mobile-nav-links">
-                        <li>
-                            <NavLink
-                                to="/sahadan-haberler"
-                                className={({ isActive }) =>
-                                    `mobile-nav-link ${isActive ? 'mobile-nav-link-active' : ''}`
-                                }
-                                onClick={closeMobileMenu}
-                            >
-                                Sahadan Haberler
-                            </NavLink>
-                        </li>
-                        <li>
-                            <NavLink
-                                to="/uyelerden-haberler"
-                                className={({ isActive }) =>
-                                    `mobile-nav-link ${isActive ? 'mobile-nav-link-active' : ''}`
-                                }
-                                onClick={closeMobileMenu}
-                            >
-                                Üyelerden Haberler
-                            </NavLink>
-                        </li>
-                        <li>
-                            <NavLink
-                                to="/makaleler"
-                                className={({ isActive }) =>
-                                    `mobile-nav-link ${isActive ? 'mobile-nav-link-active' : ''}`
-                                }
-                                onClick={closeMobileMenu}
-                            >
-                                Makaleler
-                            </NavLink>
-                        </li>
-
-                        {user ? (
-                            <>
-                                <li>
-                                    <NavLink
-                                        to="/map"
-                                        className={({ isActive }) =>
-                                            `mobile-nav-link ${isActive ? 'mobile-nav-link-active' : ''}`
-                                        }
-                                        onClick={closeMobileMenu}
-                                    >
-                                        Harita
-                                    </NavLink>
-                                </li>
-                                <li>
-                                    <NavLink
-                                        to="/"
-                                        end
-                                        className={({ isActive }) =>
-                                            `mobile-nav-link ${isActive ? 'mobile-nav-link-active' : ''}`
-                                        }
-                                        onClick={closeMobileMenu}
-                                    >
-                                        Profilim
-                                    </NavLink>
-                                </li>
-                                <li>
-                                    <button
-                                        onClick={handleLogout}
-                                        className="mobile-nav-button mobile-nav-button-secondary"
-                                    >
-                                        Çıkış Yap
-                                    </button>
-                                </li>
-                            </>
-                        ) : (
-                            <>
-                                <li>
-                                    <NavLink
-                                        to="/login"
-                                        className={({ isActive }) =>
-                                            `mobile-nav-link ${isActive ? 'mobile-nav-link-active' : ''}`
-                                        }
-                                        onClick={closeMobileMenu}
-                                    >
-                                        Giriş Yap
-                                    </NavLink>
-                                </li>
-                                <li>
-                                    <NavLink
-                                        to="/register"
-                                        className={({ isActive }) =>
-                                            `mobile-nav-link ${isActive ? 'mobile-nav-link-active' : ''}`
-                                        }
-                                        onClick={closeMobileMenu}
-                                    >
-                                        Kayıt Ol
-                                    </NavLink>
-                                </li>
-                            </>
-                        )}
-                    </ul>
-                </div>
+                {user && (
+                    <div className={`mobile-nav ${isMobileMenuOpen ? 'mobile-nav-open' : ''}`}>
+                        <ul className="mobile-nav-links">
+                            <li>
+                                <NavLink
+                                    to="/sahadan-haberler"
+                                    className={({ isActive }) =>
+                                        `mobile-nav-link ${isActive ? 'mobile-nav-link-active' : ''}`
+                                    }
+                                    onClick={closeMobileMenu}
+                                >
+                                    SaHa'dan Haberler
+                                </NavLink>
+                            </li>
+                            <li>
+                                <NavLink
+                                    to="/uyelerden-haberler"
+                                    className={({ isActive }) =>
+                                        `mobile-nav-link ${isActive ? 'mobile-nav-link-active' : ''}`
+                                    }
+                                    onClick={closeMobileMenu}
+                                >
+                                    Üyelerden Haberler
+                                </NavLink>
+                            </li>
+                            <li>
+                                <NavLink
+                                    to="/makaleler"
+                                    className={({ isActive }) =>
+                                        `mobile-nav-link ${isActive ? 'mobile-nav-link-active' : ''}`
+                                    }
+                                    onClick={closeMobileMenu}
+                                >
+                                    Makaleler
+                                </NavLink>
+                            </li>
+                            <li>
+                                <NavLink
+                                    to="/map"
+                                    className={({ isActive }) =>
+                                        `mobile-nav-link ${isActive ? 'mobile-nav-link-active' : ''}`
+                                    }
+                                    onClick={closeMobileMenu}
+                                >
+                                    Harita
+                                </NavLink>
+                            </li>
+                            <li>
+                                <NavLink
+                                    to="/"
+                                    end
+                                    className={({ isActive }) =>
+                                        `mobile-nav-link ${isActive ? 'mobile-nav-link-active' : ''}`
+                                    }
+                                    onClick={closeMobileMenu}
+                                >
+                                    Profilim
+                                </NavLink>
+                            </li>
+                            <li>
+                                <button
+                                    onClick={handleLogout}
+                                    className="mobile-nav-button mobile-nav-button-secondary"
+                                >
+                                    Çıkış Yap
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                )}
 
                 {/* Mobile Menu Overlay */}
                 {isMobileMenuOpen && (

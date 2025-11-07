@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
 const LoginPage = () => {
@@ -12,6 +13,7 @@ const LoginPage = () => {
     const [showPassword, setShowPassword] = useState(false);
 
     const { login, error: authError, clearError } = useContext(AuthContext);
+    const navigate = useNavigate();
 
     useEffect(() => {
         // Clear any previous auth errors when component mounts
@@ -83,8 +85,8 @@ const LoginPage = () => {
                 setSuccessMessage('Giriş başarılı! Yönlendiriliyorsunuz...');
                 // Navigate to profile page after successful login
                 setTimeout(() => {
-                    window.location.href = '/'; // Simple redirect - replace with your router navigation
-                }, 1000);
+                    navigate('/', { replace: true });
+                }, 500);
             } else {
                 // Handle errors from the login result
                 if (result?.errors && Object.keys(result.errors).length > 0) {
@@ -137,7 +139,7 @@ const LoginPage = () => {
                         </div>
                     )}
 
-                    <div onSubmit={handleLogin} className="login-form">
+                    <form onSubmit={handleLogin} className="login-form">
                         <div className="form-group">
                             <label htmlFor="email" className="form-label">
                                 E-posta Adresi
@@ -215,9 +217,8 @@ const LoginPage = () => {
                         </div>
 
                         <button
-                            type="button"
+                            type="submit"
                             className="login-button"
-                            onClick={handleLogin}
                             disabled={loading}
                         >
                             {loading ? (
@@ -235,16 +236,7 @@ const LoginPage = () => {
                                 </>
                             )}
                         </button>
-                    </div>
-
-                    <div className="login-footer">
-                        <p>
-                            Hesabınız yok mu?
-                            <a href="/register" className="register-link">
-                                Buradan kayıt olun
-                            </a>
-                        </p>
-                    </div>
+                    </form>
                 </div>
             </div>
 

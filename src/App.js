@@ -2,7 +2,6 @@ import React, { useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
 import MapPage from './pages/MapPage';
 import EditProfilePage from './pages/EditProfilePage';
 import SahadanHaberlerPage from './pages/SahadanHaberlerPage';
@@ -62,7 +61,6 @@ function App() {
                         <Route path="/sahadan-haberler" element={<SahadanHaberlerPage />} />
                         <Route path="/makaleler" element={<MakalelerPage />} />
                         <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/" replace />} />
-                        <Route path="/register" element={!user ? <RegisterPage /> : <Navigate to="/login" replace />} />
                         <Route path="/map" element={user ? <MapPage /> : <Navigate to="/login" replace />} />
                         <Route path="*" element={
                             <div className="error-page">

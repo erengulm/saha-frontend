@@ -8,7 +8,7 @@ export default function SahadanHaberlerPage() {
                 minHeight: '100vh', 
                 paddingTop: '80px' // Account for navbar height
             }}>
-                {/* Content will be added here later for "Sahadan Haberler" */}
+                {/* Content will be added here later for "SaHa'dan Haberler" */}
             </div>
         </div>
     );
