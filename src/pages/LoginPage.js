@@ -114,7 +114,7 @@ const LoginPage = () => {
                     <div className="login-header">
                         <h2 className="login-title">Giriş Yap</h2>
                         <p className="login-subtitle">
-                            Hesabınıza giriş yaparak harekete katılın
+                            Hesabınıza giriş yaparak platformu görüntüleyin
                         </p>
                     </div>
 
@@ -165,7 +165,7 @@ const LoginPage = () => {
                                 {errors.email || ''}
                             </div>
                             <div className="field-help">
-                                Kayıt olurken kullandığınız e-posta adresini girin
+                                Giriş için tarafınıza bildirilen e-posta adresini kullanın
                             </div>
                         </div>
 
@@ -416,7 +416,7 @@ const LoginPage = () => {
                 .field-error {
                     color: #f87171;
                     font-size: 0.875rem;
-                    margin-top: 0.5rem;
+                    margin-top: 1px;
                     min-height: 1.25rem;
                     display: block;
                 }
@@ -424,7 +424,7 @@ const LoginPage = () => {
                 .field-help {
                     color: var(--text-muted);
                     font-size: 0.875rem;
-                    margin-top: 0.5rem;
+                    margin-top: 1px;
                     min-height: 1.25rem;
                     display: block;
                 }
