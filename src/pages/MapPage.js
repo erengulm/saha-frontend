@@ -11,6 +11,7 @@ const MapPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const mapRef = useRef(null);
+    const selectedElementRef = useRef(null);
     const navigate = useNavigate();
 
     // Turkey provinces with plate codes - proper UTF-8 encoding
@@ -147,7 +148,7 @@ const MapPage = () => {
     };
 
     // Get members by province name
-    const getMembersByProvince = useCallback((plateCode, provinceName) => {
+    const getMembersByProvince = (plateCode, provinceName) => {
         // Direct match first
         if (cityUsersData[provinceName]) {
             return cityUsersData[provinceName];
@@ -174,17 +175,17 @@ const MapPage = () => {
         }
 
         return [];
-    }, [cityUsersData]);
+    };
 
     // Handle province click - show member names
-    const handleProvinceClick = useCallback((plateCode, provinceName) => {
+    const handleProvinceClick = (plateCode, provinceName) => {
         // Set selected province info
         setSelectedProvince({ code: plateCode, name: provinceName });
 
         // Get members for this province from database
         const provinceMembers = getMembersByProvince(plateCode, provinceName);
         setMembers(provinceMembers);
-    }, [getMembersByProvince]);
+    };
 
     useEffect(() => {
         // Only set up event listeners after data is loaded
@@ -231,8 +232,10 @@ const MapPage = () => {
                 // Decode Unicode escape sequences in province name
                 ilAdi = decodeUnicodeString(ilAdi);
 
-                // Add hover effect
-                event.target.style.fill = '#ff6b35';
+                // Add hover effect only if not selected
+                if (event.target !== selectedElementRef.current) {
+                    event.target.style.fill = '#ff6b35';
+                }
                 event.target.style.cursor = 'pointer';
 
                 // Ensure plate code is formatted with leading zero
@@ -248,9 +251,16 @@ const MapPage = () => {
 
         const handleMouseOut = (event) => {
             if (event.target.tagName === 'path') {
-                // Reset hover effect
-                event.target.style.fill = '';
-                event.target.style.cursor = 'default';
+                // Reset hover effect, but keep selected state
+                if (event.target === selectedElementRef.current) {
+                    // Keep green if selected
+                    event.target.style.fill = '#28a745';
+                    event.target.style.cursor = 'pointer';
+                } else {
+                    // Clear if not selected
+                    event.target.style.fill = '';
+                    event.target.style.cursor = 'default';
+                }
             }
 
             // Only hide province info if we're not moving to a child element
@@ -286,9 +296,30 @@ const MapPage = () => {
                 }
 
                 if (plakaKodu && ilAdi) {
-                    // Format plate code with leading zero
-                    const formattedCode = plakaKodu.padStart(2, '0');
-                    handleProvinceClick(formattedCode, ilAdi);
+                    // Check if clicking the same selected element (toggle off)
+                    if (event.target === selectedElementRef.current) {
+                        // Unselect - clear styling and state
+                        event.target.style.fill = '';
+                        event.target.style.cursor = 'default';
+                        selectedElementRef.current = null;
+                        setSelectedProvince(null);
+                        setMembers([]);
+                    } else {
+                        // Clear previous selection
+                        if (selectedElementRef.current) {
+                            selectedElementRef.current.style.fill = '';
+                            selectedElementRef.current.style.cursor = 'default';
+                        }
+
+                        // Set new selection
+                        selectedElementRef.current = event.target;
+                        event.target.style.fill = '#28a745'; // Green for selected
+                        event.target.style.cursor = 'pointer';
+
+                        // Format plate code with leading zero
+                        const formattedCode = plakaKodu.padStart(2, '0');
+                        handleProvinceClick(formattedCode, ilAdi);
+                    }
                 } else {
                     console.warn('Province data not found for clicked element');
                 }
@@ -314,9 +345,7 @@ const MapPage = () => {
 
         return () => {
             clearTimeout(timeoutId);
-            // Copy the ref value to avoid stale closure issue
-            const currentMapRef = mapRef.current;
-            const element = currentMapRef?.svgElement;
+            const element = mapRef.current?.svgElement;
             if (element) {
                 element.removeEventListener('mouseover', handleMouseOver);
                 element.removeEventListener('mousemove', handleMouseMove);
@@ -324,7 +353,7 @@ const MapPage = () => {
                 element.removeEventListener('click', handleClick);
             }
         };
-    }, [navigate, cityUsersData, handleProvinceClick, provinces]);
+    }, [navigate, cityUsersData]);
 
     if (loading) {
         return (
