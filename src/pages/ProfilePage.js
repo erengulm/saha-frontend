@@ -405,6 +405,11 @@ const ProfilePage = () => {
                 });
                 // Clear any previous errors
                 setErrors({});
+
+                // Refresh the page after a short delay (same as profile update)
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
             } else {
                 // Handle errors from the changePassword function
                 if (result.errors) {

@@ -169,7 +169,8 @@ export const AuthProvider = ({ children }) => {
 
     const changePassword = async (passwordData) => {
         try {
-            setLoading(true);
+            // Don't set loading to true for password change to avoid blank page
+            // setLoading(true);
             clearError();
 
             // Use the correct endpoint from your Django views
@@ -187,9 +188,8 @@ export const AuthProvider = ({ children }) => {
                 error: errorMessage,
                 errors: err.response?.data?.errors || {}
             };
-        } finally {
-            setLoading(false);
         }
+        // No finally block needed since we're not setting loading
     };
 
     // Refresh user data
