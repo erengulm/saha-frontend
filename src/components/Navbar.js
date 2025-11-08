@@ -84,6 +84,16 @@ export default function Navbar({ user, logout }) {
                             </li>
                             <li>
                                 <NavLink
+                                    to="/hakkimda"
+                                    className={({ isActive }) =>
+                                        `nav-link ${isActive ? 'nav-link-active' : ''}`
+                                    }
+                                >
+                                    Hakkımda
+                                </NavLink>
+                            </li>
+                            <li>
+                                <NavLink
                                     to="/"
                                     end
                                     className={({ isActive }) =>
@@ -168,6 +178,17 @@ export default function Navbar({ user, logout }) {
                             </li>
                             <li>
                                 <NavLink
+                                    to="/hakkimda"
+                                    className={({ isActive }) =>
+                                        `mobile-nav-link ${isActive ? 'mobile-nav-link-active' : ''}`
+                                    }
+                                    onClick={closeMobileMenu}
+                                >
+                                    Hakkımda
+                                </NavLink>
+                            </li>
+                            <li>
+                                <NavLink
                                     to="/"
                                     end
                                     className={({ isActive }) =>
@@ -223,9 +244,9 @@ export default function Navbar({ user, logout }) {
                 }
 
                 .navbar-content {
-                    max-width: 1200px;
-                    margin: 0 auto;
-                    padding: 0 2rem;
+                    max-width: 100%;
+                    margin: 0;
+                    padding: 0 1rem;
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
@@ -261,7 +282,7 @@ export default function Navbar({ user, logout }) {
                 .desktop-nav {
                     display: flex;
                     align-items: center;
-                    gap: 2rem;
+                    gap: 1rem;
                     list-style: none;
                     margin: 0;
                     padding: 0;
@@ -277,13 +298,14 @@ export default function Navbar({ user, logout }) {
                     color: #ffffff;
                     text-decoration: none;
                     font-weight: 500;
-                    padding: 0.5rem 1rem;
+                    padding: 0.5rem 0.75rem;
                     border-radius: 8px;
                     transition: all 0.3s ease;
                     position: relative;
                     display: flex;
                     align-items: center;
                     min-height: 40px;
+                    font-size: 0.95rem;
                 }
 
                 .nav-link:hover {
@@ -311,10 +333,10 @@ export default function Navbar({ user, logout }) {
                 }
 
                 .nav-button {
-                    padding: 0.5rem 1.5rem;
+                    padding: 0.5rem 1rem;
                     border-radius: 8px;
                     font-weight: 500;
-                    font-size: 1rem;
+                    font-size: 0.9rem;
                     cursor: pointer;
                     transition: all 0.3s ease;
                     border: none;

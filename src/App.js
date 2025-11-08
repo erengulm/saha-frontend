@@ -4,6 +4,7 @@ import UyelerdenHaberlerPage from './pages/UyelerdenHaberlerPage';
 import LoginPage from './pages/LoginPage';
 import MapPage from './pages/MapPage';
 import ProfilePage from './pages/ProfilePage';
+import HakkimdaPage from './pages/HakkimdaPage';
 import SahadanHaberlerPage from './pages/SahadanHaberlerPage';
 import MakalelerPage from './pages/MakalelerPage';
 import { AuthContext } from './context/AuthContext';
@@ -62,6 +63,7 @@ function App() {
                         <Route path="/makaleler" element={<MakalelerPage />} />
                         <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/" replace />} />
                         <Route path="/map" element={user ? <MapPage /> : <Navigate to="/login" replace />} />
+                        <Route path="/hakkimda" element={user ? <HakkimdaPage /> : <Navigate to="/login" replace />} />
                         <Route path="*" element={
                             <div className="error-page">
                                 <div className="content-section">
