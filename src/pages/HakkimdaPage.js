@@ -4,7 +4,20 @@ import { useAuth } from '../context/AuthContext';
 
 const HakkimdaPage = () => {
     const navigate = useNavigate();
-    const { user, isAuthenticated, loading: authLoading } = useAuth();
+    const { user, updateProfile, isAuthenticated, loading: authLoading } = useAuth();
+
+    const [activeTab, setActiveTab] = React.useState('about');
+    const [isEditing, setIsEditing] = React.useState(false);
+    const [errors, setErrors] = React.useState({});
+    const [loading, setLoading] = React.useState(false);
+    const [successMessage, setSuccessMessage] = React.useState('');
+
+    const [aboutData, setAboutData] = React.useState({
+        meslegim: '',
+        ilgi_alanlarim: '',
+        yeteneklerim: '',
+        hobilerim: ''
+    });
 
     // Check authentication and redirect if not authenticated
     React.useEffect(() => {
@@ -13,6 +26,81 @@ const HakkimdaPage = () => {
             return;
         }
     }, [isAuthenticated, authLoading, navigate]);
+
+    // Load user's about data when user is loaded
+    React.useEffect(() => {
+        if (user) {
+            setAboutData({
+                meslegim: user.meslegim || '',
+                ilgi_alanlarim: user.ilgi_alanlarim || '',
+                yeteneklerim: user.yeteneklerim || '',
+                hobilerim: user.hobilerim || ''
+            });
+        }
+    }, [user]);
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setAboutData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+
+        // Clear specific error when user starts typing
+        if (errors[name]) {
+            setErrors(prev => ({
+                ...prev,
+                [name]: ''
+            }));
+        }
+    };
+
+    const handleSave = async () => {
+        setErrors({});
+        setSuccessMessage('');
+        setLoading(true);
+
+        try {
+            const result = await updateProfile(aboutData);
+
+            if (result.success) {
+                setSuccessMessage('Hakkımda bilgileriniz başarıyla güncellendi!');
+                setIsEditing(false);
+                setErrors({});
+
+                // Refresh after a short delay
+                setTimeout(() => {
+                    setSuccessMessage('');
+                }, 3000);
+            } else {
+                if (result.errors) {
+                    setErrors(result.errors);
+                } else {
+                    setErrors({ general: result.error || 'Bilgiler güncellenirken bir hata oluştu' });
+                }
+            }
+        } catch (error) {
+            console.error('About update error:', error);
+            setErrors({ general: 'Beklenmeyen bir hata oluştu' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleCancel = () => {
+        // Reset to original user data
+        if (user) {
+            setAboutData({
+                meslegim: user.meslegim || '',
+                ilgi_alanlarim: user.ilgi_alanlarim || '',
+                yeteneklerim: user.yeteneklerim || '',
+                hobilerim: user.hobilerim || ''
+            });
+        }
+        setIsEditing(false);
+        setErrors({});
+        setSuccessMessage('');
+    };
 
     // Show loading while checking authentication
     if (authLoading) {
@@ -104,104 +192,254 @@ const HakkimdaPage = () => {
                         </p>
                     </div>
 
-                    <div className="hakkimda-content">
-                        <div className="about-section">
-                            <h3 className="about-title">Kişisel Bilgiler</h3>
-                            <div className="user-info">
-                                <div className="info-item">
-                                    <span className="info-label">Ad Soyad:</span>
-                                    <span className="info-value">{user?.first_name} {user?.last_name}</span>
-                                </div>
-                                <div className="info-item">
-                                    <span className="info-label">E-posta:</span>
-                                    <span className="info-value">{user?.email}</span>
-                                </div>
-                                <div className="info-item">
-                                    <span className="info-label">Telefon:</span>
-                                    <span className="info-value">{user?.phone || 'Belirtilmemiş'}</span>
-                                </div>
-                                <div className="info-item">
-                                    <span className="info-label">Şehir:</span>
-                                    <span className="info-value">{user?.city || 'Belirtilmemiş'}</span>
-                                </div>
-                                <div className="info-item">
-                                    <span className="info-label">İlçe:</span>
-                                    <span className="info-value">{user?.ilce || 'Belirtilmemiş'}</span>
-                                </div>
-                                <div className="info-item">
-                                    <span className="info-label">Mahalle:</span>
-                                    <span className="info-value">{user?.mahalle || 'Belirtilmemiş'}</span>
-                                </div>
-                                <div className="info-item">
-                                    <span className="info-label">Finansal Kod:</span>
-                                    <span className="info-value">{user?.finansal_kod_numarasi || 'Belirtilmemiş'}</span>
-                                </div>
-                                <div className="info-item">
-                                    <span className="info-label">Rol:</span>
-                                    <span className="info-value">{user?.role_display || user?.role}</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div className="about-features">
-                            <div className="feature-item">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                </svg>
-                                <div>
-                                    <h4>Kişisel Hikaye</h4>
-                                    <p>Bu bölüm geliştirilme aşamasındadır. Yakında kendi hikayenizi ve deneyimlerinizi paylaşabileceğiniz bir alan burada yer alacaktır.</p>
-                                </div>
-                            </div>
-                            
-                            <div className="feature-item">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                    <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                    <path d="M23 21V19C23 18.1645 22.7155 17.3541 22.2094 16.7006C21.7033 16.047 20.9999 15.5904 20.2 15.405" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                    <path d="M16 3.13C16.8003 3.31462 17.5037 3.77096 18.0098 4.42459C18.5159 5.07823 18.8002 5.88868 18.8002 6.725C18.8002 7.56132 18.5159 8.37177 18.0098 9.02541C17.5037 9.67904 16.8003 10.1354 16 10.32" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                </svg>
-                                <div>
-                                    <h4>Sosyal Bağlantılar</h4>
-                                    <p>Diğer üyelerle bağlantı kurun ve ağınızı genişletin. Ortak ilgi alanlarınızı keşfedin.</p>
-                                </div>
-                            </div>
-                            
-                            <div className="feature-item">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M9 11C11.2091 11 13 9.20914 13 7C13 4.79086 11.2091 3 9 3C6.79086 3 5 4.79086 5 7C5 9.20914 6.79086 11 9 11Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                    <path d="M21 21V19C21 16.7909 19.2091 15 17 15H1V19C1 21.2091 2.79086 23 5 23H17C19.2091 23 21 21.2091 21 19V21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                    <path d="M16 3.13C16.8003 3.31462 17.5037 3.77096 18.0098 4.42459C18.5159 5.07823 18.8002 5.88868 18.8002 6.725C18.8002 7.56132 18.5159 8.37177 18.0098 9.02541C17.5037 9.67904 16.8003 10.1354 16 10.32" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                </svg>
-                                <div>
-                                    <h4>İlgi Alanları</h4>
-                                    <p>İlgi alanlarınızı ve uzmanlık konularınızı belirtin. Benzer ilgi alanlarına sahip kişileri bulun.</p>
-                                </div>
-                            </div>
-                        </div>
+                    {/* Tab Navigation */}
+                    <div className="tab-navigation">
+                        <button
+                            className={`tab-button ${activeTab === 'about' ? 'active' : ''}`}
+                            onClick={() => {
+                                setActiveTab('about');
+                                setIsEditing(false);
+                                setErrors({});
+                                setSuccessMessage('');
+                            }}
+                            type="button"
+                        >
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                                <path d="M9.09 9C9.3251 8.33167 9.78915 7.76811 10.4 7.40913C11.0108 7.05016 11.7289 6.91894 12.4272 7.03871C13.1255 7.15849 13.7588 7.52152 14.2151 8.06353C14.6713 8.60553 14.9211 9.29152 14.92 10C14.92 12 11.92 13 11.92 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M12 17H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            Ben Kimim?
+                        </button>
+                        <button
+                            className={`tab-button ${activeTab === 'edit' ? 'active' : ''}`}
+                            onClick={() => {
+                                setActiveTab('edit');
+                                setIsEditing(true);
+                                setErrors({});
+                                setSuccessMessage('');
+                            }}
+                            type="button"
+                        >
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M18.5 2.50023C18.8978 2.1024 19.4374 1.87891 20 1.87891C20.5626 1.87891 21.1022 2.1024 21.5 2.50023C21.8978 2.89805 22.1213 3.43762 22.1213 4.00023C22.1213 4.56284 21.8978 5.1024 21.5 5.50023L12 15.0002L8 16.0002L9 12.0002L18.5 2.50023Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            Düzenle
+                        </button>
+                    </div>
 
-                        <div className="action-buttons">
-                            <button
-                                className="back-button"
-                                onClick={() => navigate(-1)}
-                            >
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M19 12H5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                    <path d="M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                </svg>
-                                Geri Dön
-                            </button>
-                            <button
-                                className="edit-button"
-                                onClick={() => navigate('/')}
-                            >
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                    <path d="M18.5 2.50023C18.8978 2.1024 19.4374 1.87891 20 1.87891C20.5626 1.87891 21.1022 2.1024 21.5 2.50023C21.8978 2.89805 22.1213 3.43762 22.1213 4.00023C22.1213 4.56284 21.8978 5.1024 21.5 5.50023L12 15.0002L8 16.0002L9 12.0002L18.5 2.50023Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                </svg>
-                                Profili Düzenle
-                            </button>
+                    {/* General Error Message */}
+                    {errors.general && (
+                        <div className="error-message">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                                <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" strokeWidth="2"/>
+                                <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" strokeWidth="2"/>
+                            </svg>
+                            {errors.general}
                         </div>
+                    )}
+
+                    {/* Success Message */}
+                    {successMessage && (
+                        <div className="success-message">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                            </svg>
+                            {successMessage}
+                        </div>
+                    )}
+
+                    <div className="hakkimda-content">
+                        {/* Ben Kimim Tab Content */}
+                        {activeTab === 'about' && (
+                            <div className="about-tab-content">
+                                <div className="about-sections">
+                                    <div className="about-section">
+                                        <div className="section-header">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            </svg>
+                                            <h3>Mesleğim</h3>
+                                        </div>
+                                        <div className="section-content">
+                                            {aboutData.meslegim || 'Henüz belirtilmemiş'}
+                                        </div>
+                                    </div>
+
+                                    <div className="about-section">
+                                        <div className="section-header">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                                                <polyline points="12,6 12,12 16,14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            </svg>
+                                            <h3>İlgi Alanlarım</h3>
+                                        </div>
+                                        <div className="section-content">
+                                            {aboutData.ilgi_alanlarim || 'Henüz belirtilmemiş'}
+                                        </div>
+                                    </div>
+
+                                    <div className="about-section">
+                                        <div className="section-header">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <polygon points="12,2 15.09,8.26 22,9 17,14 18.18,21 12,17.77 5.82,21 7,14 2,9 8.91,8.26" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            </svg>
+                                            <h3>Yeteneklerim</h3>
+                                        </div>
+                                        <div className="section-content">
+                                            {aboutData.yeteneklerim || 'Henüz belirtilmemiş'}
+                                        </div>
+                                    </div>
+
+                                    <div className="about-section">
+                                        <div className="section-header">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M9 11H1L4 9L1 7H9L12 1L15 7H23L20 9L23 11H15L12 17L9 11Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            </svg>
+                                            <h3>Hobilerim</h3>
+                                        </div>
+                                        <div className="section-content">
+                                            {aboutData.hobilerim || 'Henüz belirtilmemiş'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Düzenle Tab Content */}
+                        {activeTab === 'edit' && (
+                            <div className="edit-tab-content">
+                                <form onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
+                                    <div className="form-group">
+                                        <label htmlFor="meslegim" className="form-label">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            </svg>
+                                            Mesleğim
+                                        </label>
+                                        <textarea
+                                            id="meslegim"
+                                            name="meslegim"
+                                            className={`form-textarea ${errors.meslegim ? 'error' : ''}`}
+                                            value={aboutData.meslegim}
+                                            onChange={handleInputChange}
+                                            disabled={loading}
+                                            placeholder="Mesleğinizi yazın..."
+                                            rows="3"
+                                        />
+                                        <div className="field-error">
+                                            {errors.meslegim || ''}
+                                        </div>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label htmlFor="ilgi_alanlarim" className="form-label">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                                                <polyline points="12,6 12,12 16,14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            </svg>
+                                            İlgi Alanlarım
+                                        </label>
+                                        <textarea
+                                            id="ilgi_alanlarim"
+                                            name="ilgi_alanlarim"
+                                            className={`form-textarea ${errors.ilgi_alanlarim ? 'error' : ''}`}
+                                            value={aboutData.ilgi_alanlarim}
+                                            onChange={handleInputChange}
+                                            disabled={loading}
+                                            placeholder="İlgi alanlarınızı yazın..."
+                                            rows="3"
+                                        />
+                                        <div className="field-error">
+                                            {errors.ilgi_alanlarim || ''}
+                                        </div>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label htmlFor="yeteneklerim" className="form-label">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <polygon points="12,2 15.09,8.26 22,9 17,14 18.18,21 12,17.77 5.82,21 7,14 2,9 8.91,8.26" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            </svg>
+                                            Yeteneklerim
+                                        </label>
+                                        <textarea
+                                            id="yeteneklerim"
+                                            name="yeteneklerim"
+                                            className={`form-textarea ${errors.yeteneklerim ? 'error' : ''}`}
+                                            value={aboutData.yeteneklerim}
+                                            onChange={handleInputChange}
+                                            disabled={loading}
+                                            placeholder="Yeteneklerinizi yazın..."
+                                            rows="3"
+                                        />
+                                        <div className="field-error">
+                                            {errors.yeteneklerim || ''}
+                                        </div>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label htmlFor="hobilerim" className="form-label">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M9 11H1L4 9L1 7H9L12 1L15 7H23L20 9L23 11H15L12 17L9 11Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            </svg>
+                                            Hobilerim
+                                        </label>
+                                        <textarea
+                                            id="hobilerim"
+                                            name="hobilerim"
+                                            className={`form-textarea ${errors.hobilerim ? 'error' : ''}`}
+                                            value={aboutData.hobilerim}
+                                            onChange={handleInputChange}
+                                            disabled={loading}
+                                            placeholder="Hobilerinizi yazın..."
+                                            rows="3"
+                                        />
+                                        <div className="field-error">
+                                            {errors.hobilerim || ''}
+                                        </div>
+                                    </div>
+
+                                    <div className="action-buttons">
+                                        <button
+                                            type="button"
+                                            className="cancel-button"
+                                            onClick={handleCancel}
+                                            disabled={loading}
+                                        >
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                                <path d="M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            </svg>
+                                            İptal
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            className="save-button"
+                                            disabled={loading}
+                                        >
+                                            {loading ? (
+                                                <>
+                                                    <div className="loading-spinner"></div>
+                                                    Kaydediliyor...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                        <path d="M19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H16L21 8V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                                        <polyline points="17,21 17,13 7,13 7,21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                                        <polyline points="7,3 7,8 15,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                                    </svg>
+                                                    Kaydet
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -245,14 +483,15 @@ const HakkimdaPage = () => {
                     background: rgba(255, 255, 255, 0.05);
                     border: 1px solid var(--border-primary);
                     border-radius: var(--radius-lg);
-                    padding: 3rem;
+                    padding: 0;
                     backdrop-filter: blur(10px);
                     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+                    overflow: hidden;
                 }
 
                 .hakkimda-header {
                     text-align: center;
-                    margin-bottom: 3rem;
+                    padding: 3rem 3rem 1rem;
                 }
 
                 .hakkimda-title {
@@ -271,9 +510,82 @@ const HakkimdaPage = () => {
                     margin: 0;
                 }
 
+                /* Tab Navigation */
+                .tab-navigation {
+                    display: flex;
+                    background: rgba(255, 255, 255, 0.03);
+                    border-bottom: 1px solid var(--border-primary);
+                }
+
+                .tab-button {
+                    flex: 1;
+                    padding: 1.5rem;
+                    background: none;
+                    border: none;
+                    font-size: 1.1rem;
+                    font-weight: 600;
+                    color: var(--text-muted);
+                    cursor: pointer;
+                    transition: all var(--transition-normal);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 10px;
+                    position: relative;
+                }
+
+                .tab-button:hover {
+                    background: rgba(255, 255, 255, 0.05);
+                    color: var(--text-primary);
+                }
+
+                .tab-button.active {
+                    background: rgba(59, 130, 246, 0.1);
+                    color: var(--primary-blue);
+                }
+
+                .tab-button.active::after {
+                    content: '';
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    height: 3px;
+                    background: var(--primary-blue);
+                }
+
                 .hakkimda-content {
+                    padding: 2rem 3rem 3rem;
+                }
+
+                /* Messages */
+                .error-message,
+                .success-message {
+                    padding: 1rem 1.5rem;
+                    border-radius: var(--radius-sm);
+                    margin-bottom: 2rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    font-weight: 500;
+                }
+
+                .success-message {
+                    background: rgba(34, 197, 94, 0.1);
+                    color: #22c55e;
+                    border: 1px solid rgba(34, 197, 94, 0.2);
+                }
+
+                .error-message {
+                    background: rgba(239, 68, 68, 0.1);
+                    color: #ef4444;
+                    border: 1px solid rgba(239, 68, 68, 0.2);
+                }
+
+                /* About Tab Styles */
+                .about-sections {
                     display: grid;
-                    gap: 3rem;
+                    gap: 2rem;
                 }
 
                 .about-section {
@@ -281,102 +593,121 @@ const HakkimdaPage = () => {
                     border: 1px solid var(--border-primary);
                     border-radius: var(--radius-sm);
                     padding: 2rem;
+                    border-left: 4px solid var(--primary-blue);
                 }
 
-                .about-title {
-                    font-size: 1.5rem;
-                    font-weight: 600;
-                    color: var(--text-primary);
-                    margin-bottom: 1.5rem;
-                    text-align: center;
-                }
-
-                .user-info {
-                    display: grid;
-                    gap: 1rem;
-                }
-
-                .info-item {
+                .section-header {
                     display: flex;
-                    justify-content: space-between;
                     align-items: center;
-                    padding: 1rem;
-                    background: rgba(255, 255, 255, 0.02);
-                    border: 1px solid var(--border-primary);
-                    border-radius: var(--radius-sm);
-                    transition: all var(--transition-normal);
+                    gap: 12px;
+                    margin-bottom: 1rem;
                 }
 
-                .info-item:hover {
-                    background: rgba(255, 255, 255, 0.05);
-                    border-color: var(--border-accent);
-                    transform: translateY(-1px);
-                }
-
-                .info-label {
-                    font-weight: 600;
-                    color: var(--text-muted);
-                    min-width: 120px;
-                }
-
-                .info-value {
-                    color: var(--text-primary);
-                    font-weight: 500;
-                    text-align: right;
-                }
-
-                .about-features {
-                    display: grid;
-                    gap: 2rem;
-                }
-
-                .feature-item {
-                    display: flex;
-                    align-items: flex-start;
-                    gap: 1rem;
-                    padding: 1.5rem;
-                    background: rgba(255, 255, 255, 0.03);
-                    border: 1px solid var(--border-primary);
-                    border-radius: var(--radius-sm);
-                    transition: all var(--transition-normal);
-                }
-
-                .feature-item:hover {
-                    background: rgba(255, 255, 255, 0.05);
-                    border-color: var(--border-accent);
-                    transform: translateY(-2px);
-                }
-
-                .feature-item svg {
+                .section-header svg {
                     color: var(--primary-blue);
                     flex-shrink: 0;
-                    margin-top: 0.25rem;
                 }
 
-                .feature-item h4 {
-                    color: var(--text-primary);
-                    font-size: 1.1rem;
-                    font-weight: 600;
-                    margin: 0 0 0.5rem 0;
-                }
-
-                .feature-item p {
-                    color: var(--text-muted);
-                    font-size: 0.9rem;
-                    line-height: 1.5;
+                .section-header h3 {
                     margin: 0;
+                    font-size: 1.3rem;
+                    font-weight: 600;
+                    color: var(--text-primary);
                 }
 
+                .section-content {
+                    color: var(--text-muted);
+                    font-size: 1rem;
+                    line-height: 1.6;
+                    padding-left: 36px;
+                    white-space: pre-wrap;
+                }
+
+                /* Edit Tab Styles */
+                .edit-tab-content {
+                    max-width: 700px;
+                    margin: 0 auto;
+                }
+
+                .form-group {
+                    margin-bottom: 2rem;
+                }
+
+                .form-label {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    font-weight: 600;
+                    color: var(--text-primary);
+                    margin-bottom: 8px;
+                    font-size: 1rem;
+                }
+
+                .form-label svg {
+                    color: var(--primary-blue);
+                    flex-shrink: 0;
+                }
+
+                .form-textarea {
+                    width: 100%;
+                    padding: 1rem;
+                    border: 2px solid var(--border-primary);
+                    border-radius: var(--radius-sm);
+                    font-size: 1rem;
+                    line-height: 1.5;
+                    resize: vertical;
+                    min-height: 100px;
+                    transition: all var(--transition-normal);
+                    font-family: inherit;
+                    background: rgba(255, 255, 255, 0.03);
+                    color: var(--text-primary);
+                }
+
+                .form-textarea::placeholder {
+                    color: var(--text-muted);
+                }
+
+                .form-textarea:focus {
+                    outline: none;
+                    border-color: var(--primary-blue);
+                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+                }
+
+                .form-textarea.error {
+                    border-color: #ef4444;
+                    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+                }
+
+                .form-textarea:disabled {
+                    background-color: rgba(255, 255, 255, 0.01);
+                    cursor: not-allowed;
+                    opacity: 0.7;
+                }
+
+                .field-error {
+                    color: #ef4444;
+                    font-size: 0.875rem;
+                    margin-top: 5px;
+                    min-height: 20px;
+                }
+
+                /* Action Buttons */
                 .action-buttons {
                     display: flex;
-                    justify-content: space-between;
-                    align-items: center;
                     gap: 1rem;
+                    justify-content: center;
+                    margin-top: 2rem;
                     padding-top: 2rem;
                     border-top: 1px solid var(--border-primary);
                 }
 
-                .back-button, .edit-button {
+                .back-button,
+                .edit-button,
+                .cancel-button,
+                .save-button {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
                     padding: 1rem 1.5rem;
                     border: none;
                     border-radius: var(--radius-sm);
@@ -384,33 +715,56 @@ const HakkimdaPage = () => {
                     font-weight: 600;
                     cursor: pointer;
                     transition: all var(--transition-normal);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 0.5rem;
+                    text-decoration: none;
                     min-width: 150px;
+                    justify-content: center;
                 }
 
-                .back-button {
+                .back-button,
+                .cancel-button {
                     background: rgba(148, 163, 184, 0.1);
                     color: var(--text-muted);
                     border: 1px solid var(--border-primary);
                 }
 
-                .back-button:hover {
+                .back-button:hover,
+                .cancel-button:hover {
                     background: rgba(148, 163, 184, 0.2);
                     color: var(--text-primary);
                     transform: translateY(-1px);
                 }
 
-                .edit-button {
+                .edit-button,
+                .save-button {
                     background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
                     color: white;
                 }
 
-                .edit-button:hover {
+                .edit-button:hover,
+                .save-button:hover {
                     transform: translateY(-2px);
                     box-shadow: 0 10px 25px var(--shadow-blue);
+                }
+
+                .save-button:disabled,
+                .cancel-button:disabled {
+                    opacity: 0.6;
+                    cursor: not-allowed;
+                    transform: none;
+                }
+
+                .loading-spinner {
+                    width: 16px;
+                    height: 16px;
+                    border: 2px solid transparent;
+                    border-top: 2px solid currentColor;
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                }
+
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
                 }
 
                 @media (max-width: 768px) {
@@ -419,45 +773,57 @@ const HakkimdaPage = () => {
                         padding-top: 100px;
                     }
 
-                    .hakkimda-card {
-                        padding: 2rem 1.5rem;
+                    .hakkimda-header {
+                        padding: 2rem 2rem 1rem;
                     }
 
                     .hakkimda-title {
                         font-size: 2rem;
                     }
 
-                    .info-item {
-                        flex-direction: column;
-                        align-items: flex-start;
-                        gap: 0.5rem;
+                    .hakkimda-content {
+                        padding: 2rem;
                     }
-
-                    .info-label {
-                        min-width: auto;
-                    }
-
-                    .info-value {
-                        text-align: left;
-                    }
-
+                    
                     .action-buttons {
                         flex-direction: column;
-                        gap: 0.75rem;
+                        align-items: stretch;
+                    }
+                    
+                    .back-button,
+                    .edit-button,
+                    .cancel-button,
+                    .save-button {
+                        justify-content: center;
                     }
 
-                    .back-button, .edit-button {
-                        width: 100%;
+                    .section-content {
+                        padding-left: 0;
+                    }
+                    
+                    .section-header {
+                        flex-direction: column;
+                        align-items: flex-start;
+                        gap: 8px;
                     }
                 }
 
                 @media (max-width: 480px) {
-                    .hakkimda-card {
-                        padding: 1.5rem 1rem;
+                    .hakkimda-header {
+                        padding: 1.5rem 1rem 1rem;
+                    }
+
+                    .hakkimda-content {
+                        padding: 1.5rem 1rem 2rem;
                     }
 
                     .hakkimda-title {
                         font-size: 1.75rem;
+                    }
+                    
+                    .tab-button {
+                        padding: 1rem 0.5rem;
+                        font-size: 1rem;
                     }
                 }
             `}</style>
