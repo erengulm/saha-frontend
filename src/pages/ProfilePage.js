@@ -27,7 +27,8 @@ const ProfilePage = () => {
         phone: '',
         city: '',
         ilce: '',
-        mahalle: ''
+        mahalle: '',
+        finansal_kod_numarasi: ''
     });
 
     const [passwordData, setPasswordData] = useState({
@@ -159,7 +160,8 @@ const ProfilePage = () => {
                 phone: user.phone || '',
                 city: user.city || '',
                 ilce: user.ilce || '',
-                mahalle: user.mahalle || ''
+                mahalle: user.mahalle || '',
+                finansal_kod_numarasi: user.finansal_kod_numarasi || ''
             });
         }
     }, [user]);
@@ -293,6 +295,16 @@ const ProfilePage = () => {
         // Mahalle validation
         if (!profileData.mahalle) {
             newErrors.mahalle = 'Lütfen mahalle seçiniz';
+        }
+
+        // Finansal Kod Numarası validation
+        if (!profileData.finansal_kod_numarasi) {
+            newErrors.finansal_kod_numarasi = 'Finansal kod numarası gereklidir';
+        } else {
+            const code = parseInt(profileData.finansal_kod_numarasi);
+            if (isNaN(code) || code < 1) {
+                newErrors.finansal_kod_numarasi = 'Finansal kod numarası 1 veya daha büyük bir sayı olmalıdır';
+            }
         }
 
         return newErrors;
@@ -766,35 +778,65 @@ const ProfilePage = () => {
                                     </div>
                                 </div>
 
-                                {/* Mahalle */}
-                                <div className="form-group">
-                                    <label htmlFor="mahalle" className="form-label">
-                                        Mahalle
-                                        <span className="required">*</span>
-                                    </label>
-                                    <div className="input-wrapper">
-                                        <svg className="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M21 10C21 17 12 23 12 23S3 17 3 10C3 7.61305 3.94821 5.32387 5.63604 3.63604C7.32387 1.94821 9.61305 1 12 1C14.3869 1 16.6761 1.94821 18.3639 3.63604C20.0518 5.32387 21 7.61305 21 10Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                            <circle cx="12" cy="10" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                        </svg>
-                                        <select
-                                            id="mahalle"
-                                            name="mahalle"
-                                            className={`form-select ${errors.mahalle ? 'error' : ''}`}
-                                            value={profileData.mahalle}
-                                            onChange={handleProfileInputChange}
-                                            disabled={loading || !profileData.ilce}
-                                        >
-                                            <option value="">Mahalle seçiniz</option>
-                                            {profileData.ilce && neighborhoodsByDistrict[profileData.ilce] && 
-                                                neighborhoodsByDistrict[profileData.ilce].map(neighborhood => (
-                                                    <option key={neighborhood} value={neighborhood}>{neighborhood}</option>
-                                                ))
-                                            }
-                                        </select>
+                                {/* Mahalle and Financial Code Row */}
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label htmlFor="mahalle" className="form-label">
+                                            Mahalle
+                                            <span className="required">*</span>
+                                        </label>
+                                        <div className="input-wrapper">
+                                            <svg className="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M21 10C21 17 12 23 12 23S3 17 3 10C3 7.61305 3.94821 5.32387 5.63604 3.63604C7.32387 1.94821 9.61305 1 12 1C14.3869 1 16.6761 1.94821 18.3639 3.63604C20.0518 5.32387 21 7.61305 21 10Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                                <circle cx="12" cy="10" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            </svg>
+                                            <select
+                                                id="mahalle"
+                                                name="mahalle"
+                                                className={`form-select ${errors.mahalle ? 'error' : ''}`}
+                                                value={profileData.mahalle}
+                                                onChange={handleProfileInputChange}
+                                                disabled={loading || !profileData.ilce}
+                                            >
+                                                <option value="">Mahalle seçiniz</option>
+                                                {profileData.ilce && neighborhoodsByDistrict[profileData.ilce] && 
+                                                    neighborhoodsByDistrict[profileData.ilce].map(neighborhood => (
+                                                        <option key={neighborhood} value={neighborhood}>{neighborhood}</option>
+                                                    ))
+                                                }
+                                            </select>
+                                        </div>
+                                        <div className="field-error">
+                                            {errors.mahalle || ''}
+                                        </div>
                                     </div>
-                                    <div className="field-error">
-                                        {errors.mahalle || ''}
+
+                                    <div className="form-group">
+                                        <label htmlFor="finansal_kod_numarasi" className="form-label">
+                                            Finansal Kod Numarası
+                                            <span className="required">*</span>
+                                        </label>
+                                        <div className="input-wrapper">
+                                            <svg className="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M4 9H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                                <path d="M4 15H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                                <path d="M10 3L8 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                                <path d="M16 3L14 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            </svg>
+                                            <input
+                                                type="text"
+                                                id="finansal_kod_numarasi"
+                                                name="finansal_kod_numarasi"
+                                                className={`form-input ${errors.finansal_kod_numarasi ? 'error' : ''}`}
+                                                value={profileData.finansal_kod_numarasi}
+                                                onChange={handleProfileInputChange}
+                                                disabled={loading}
+                                                placeholder="1"
+                                            />
+                                        </div>
+                                        <div className="field-error">
+                                            {errors.finansal_kod_numarasi || ''}
+                                        </div>
                                     </div>
                                 </div>
 
