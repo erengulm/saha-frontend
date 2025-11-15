@@ -204,9 +204,7 @@ const MapPage = () => {
         try {
             const features = istanbulDistrictsJson.features || [];
             features.forEach(f => {
-                const display = f.properties?.display_name || '';
-                // first token before comma is district name
-                const district = display.split(',')[0].trim();
+                const district = f.properties?.name || '';
                 const key = normalize(district);
                 if (key) lookup[key] = district;
             });
