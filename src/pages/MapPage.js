@@ -779,7 +779,9 @@ const MapPage = () => {
                         {/* Title */}
                         <div className="title-section">
                             <h2 className="section-title mb-4">SaHa Türkiye Geneli Üye Haritası</h2>
-                            <p className="mb-3 text-gray-600">Üye profillerini görmek için bir ile tıklayın</p>
+                            <p className="mb-3 text-gray-600">
+                                Üye profillerini görmek için bir {currentView === 'istanbul' ? 'ilçeye' : 'ile'} tıklayın
+                            </p>
                         </div>
 
                         {/* Province Info Boxes */}
@@ -798,13 +800,17 @@ const MapPage = () => {
                                     minWidth: '0',
                                     overflow: 'hidden'
                                 }}>
-                                    <h4 style={{ margin: '0 0 4px 0', color: '#ff6b35', fontSize: '14px' }}>Üzerine Gelinen İl</h4>
+                                    <h4 style={{ margin: '0 0 4px 0', color: '#ff6b35', fontSize: '14px' }}>
+                                        {currentView === 'istanbul' ? 'Üzerine Gelinen İlçe' : 'Üzerine Gelinen İl'}
+                                    </h4>
                                     <p style={{ margin: '0', fontSize: '16px', fontWeight: 'bold', lineHeight: '1.1', wordBreak: 'break-word' }}>
                                         {hoveredProvince.name}
                                     </p>
-                                    <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '14px' }}>
-                                        Plaka: {hoveredProvince.code}
-                                    </p>
+                                    {currentView !== 'istanbul' && (
+                                        <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '14px' }}>
+                                            Plaka: {hoveredProvince.code}
+                                        </p>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="hover-instruction card animate-fade-in" style={{
@@ -817,7 +823,7 @@ const MapPage = () => {
                                     minWidth: '0'
                                 }}>
                                     <p style={{ margin: '0', color: '#666', fontSize: '12px', textAlign: 'center' }}>
-                                        Bir ilin üzerine gelin
+                                        Bir {currentView === 'istanbul' ? 'ilçenin' : 'ilin'} üzerine gelin
                                     </p>
                                 </div>
                             )}
@@ -831,13 +837,21 @@ const MapPage = () => {
                                     minWidth: '0',
                                     overflow: 'hidden'
                                 }}>
-                                    <h4 style={{ margin: '0 0 4px 0', color: '#28a745', fontSize: '14px' }}>Seçilen İl</h4>
+                                    <h4 style={{ margin: '0 0 4px 0', color: '#28a745', fontSize: '14px' }}>
+                                        {currentView === 'istanbul' ? 'Seçilen İlçe' : 'Seçilen İl'}
+                                    </h4>
                                     <p style={{ margin: '0', fontSize: '16px', fontWeight: 'bold', lineHeight: '1.1', wordBreak: 'break-word' }}>
                                         {selectedProvince.name}
                                     </p>
-                                    <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '14px' }}>
-                                        Plaka: {selectedProvince.code} | Üye: {members.length}
-                                    </p>
+                                    {currentView !== 'istanbul' ? (
+                                        <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '14px' }}>
+                                            Plaka: {selectedProvince.code} | Üye: {members.length}
+                                        </p>
+                                    ) : (
+                                        <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '14px' }}>
+                                            Üye: {members.length}
+                                        </p>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="click-instruction card animate-fade-in" style={{
@@ -850,7 +864,7 @@ const MapPage = () => {
                                     minWidth: '0'
                                 }}>
                                     <p style={{ margin: '0', color: '#666', fontSize: '12px', textAlign: 'center' }}>
-                                        Bir ile tıklayın
+                                        Bir {currentView === 'istanbul' ? 'ilçeye' : 'ile'} tıklayın
                                     </p>
                                 </div>
                             )}
@@ -937,7 +951,10 @@ const MapPage = () => {
                     {selectedProvince ? (
                         <>
                             <h3 className="card-title" style={{ fontSize: '20px', marginBottom: '15px', color: 'var(--text-primary)' }}>
-                                {selectedProvince.name} ({selectedProvince.code}) İlinden Üyeler
+                                {currentView === 'istanbul' 
+                                    ? `${selectedProvince.name} İlçesinden Üyeler`
+                                    : `${selectedProvince.name} (${selectedProvince.code}) İlinden Üyeler`
+                                }
                             </h3>
                             {members.length > 0 ? (
                                 <div className="members-list">
@@ -966,7 +983,7 @@ const MapPage = () => {
                                 </div>
                             ) : (
                                 <p className="card-content" style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>
-                                    Bu ilden henüz kayıtlı üye bulunmamaktadır.
+                                    Bu {currentView === 'istanbul' ? 'ilçeden' : 'ilden'} henüz kayıtlı üye bulunmamaktadır.
                                 </p>
                             )}
                         </>
@@ -979,7 +996,7 @@ const MapPage = () => {
                             textAlign: 'center'
                         }}>
                             <p className="card-content" style={{ color: '#999', fontSize: '16px' }}>
-                                Üye listesini görmek için<br/>bir ile tıklayın
+                                Üye listesini görmek için<br/>bir {currentView === 'istanbul' ? 'ilçeye' : 'ile'} tıklayın
                             </p>
                         </div>
                     )}
