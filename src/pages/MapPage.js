@@ -159,7 +159,7 @@ const MapPage = () => {
 
         // Case-insensitive match
         const cityKey = Object.keys(cityUsersData).find(
-            city => city.toLowerCase() === provinceName.toLowerCase()
+            city => toTurkishLowerCase(city) === toTurkishLowerCase(provinceName)
         );
 
         if (cityKey) {
@@ -168,8 +168,8 @@ const MapPage = () => {
 
         // Try partial matching
         const partialMatch = Object.keys(cityUsersData).find(city => {
-            const cleanCity = city.toLowerCase().trim();
-            const cleanProvince = provinceName.toLowerCase().trim();
+            const cleanCity = toTurkishLowerCase(city.trim());
+            const cleanProvince = toTurkishLowerCase(provinceName.trim());
             return cleanCity.includes(cleanProvince) || cleanProvince.includes(cleanCity);
         });
 
@@ -190,12 +190,61 @@ const MapPage = () => {
         setMembers(provinceMembers);
     };
 
+    // Turkish-aware lowercase conversion
+    const toTurkishLowerCase = (s) => {
+        if (!s) return '';
+        return s.replace(/İ/g, 'i').replace(/I/g, 'ı').toLocaleLowerCase('tr-TR');
+    };
+
+    // Decode any escaped Unicode characters in strings (e.g., \xFC -> ü, \xE7 -> ç)
+    const decodeUnicode = (s) => {
+        if (!s) return '';
+        try {
+            // Replace \xHH (hex escape) with actual characters
+            let decoded = s.replace(/\\x([0-9A-Fa-f]{2})/g, (match, hex) => {
+                return String.fromCharCode(parseInt(hex, 16));
+            });
+            
+            // Replace \uHHHH (unicode escape) with actual characters
+            decoded = decoded.replace(/\\u([0-9A-Fa-f]{4})/g, (match, hex) => {
+                return String.fromCharCode(parseInt(hex, 16));
+            });
+            
+            // Common Turkish character mappings for various encoding issues
+            const turkishMap = {
+                'Ã§': 'ç',  // ç in UTF-8 mis-encoding
+                'Ã': 'ğ',  // ğ in UTF-8 mis-encoding
+                'Ä±': 'ı',  // ı in UTF-8 mis-encoding
+                'Ã¶': 'ö',  // ö in UTF-8 mis-encoding
+                'ÅŸ': 'ş',  // ş in UTF-8 mis-encoding
+                'Ã¼': 'ü',  // ü in UTF-8 mis-encoding
+                'Ä°': 'İ',  // İ in UTF-8 mis-encoding
+                'Ãœ': 'Ü',  // Ü in UTF-8 mis-encoding
+                'Ã–': 'Ö',  // Ö in UTF-8 mis-encoding
+                'Ã‡': 'Ç',  // Ç in UTF-8 mis-encoding
+                'ÄŸ': 'ğ',  // ğ alternative encoding
+                'Åž': 'Ş',  // Ş in UTF-8 mis-encoding
+            };
+            
+            // Apply Turkish character fixes
+            Object.keys(turkishMap).forEach(key => {
+                decoded = decoded.split(key).join(turkishMap[key]);
+            });
+            
+            return decoded;
+        } catch (e) {
+            console.warn('Unicode decode error:', e);
+            return s;
+        }
+    };
+
     // Normalize strings for matching path IDs to district names
     const normalize = (s) => {
         if (!s) return '';
-        // lower, remove diacritics, remove non-alphanum
-        const map = { 'ç': 'c', 'ğ': 'g', 'ı': 'i', 'İ': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u', 'â': 'a', 'Á':'a' };
-        return s.toLowerCase().split('').map(ch => map[ch] || ch).join('').replace(/[^a-z0-9]/g, '');
+        // Decode first, then Turkish-aware lower, remove diacritics, remove non-alphanum
+        const decoded = decodeUnicode(s);
+        const map = { 'ç': 'c', 'ğ': 'g', 'ı': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u', 'â': 'a', 'á':'a' };
+        return toTurkishLowerCase(decoded).split('').map(ch => map[ch] || ch).join('').replace(/[^a-z0-9]/g, '');
     };
 
     // Build lookup from normalized district name -> display name (first token from display_name)
@@ -240,16 +289,21 @@ const MapPage = () => {
 
             // If we are in Istanbul view, treat hover as district
             if (currentView === 'istanbul') {
-                const id = event.target.id || event.target.getAttribute('id') || '';
-                const key = normalize(id.replace(/^path/i, '').replace(/\d+/g, ''));
-                const districtName = districtNameLookup[key];
+                // Check if the path's parent group has data-district attribute
+                const parentGroup = event.target.closest('g[data-district]');
+                if (!parentGroup) return;
+                
+                const districtName = decodeUnicode(parentGroup.getAttribute('data-district'));
                 if (!districtName) return;
+                
+                const key = normalize(districtName);
 
                 // Special handling for Adalar - hover all islands simultaneously
                 if (key === 'adalar') {
                     const svg = mapRef.current?.querySelector('svg');
                     if (svg) {
-                        const adalarpaths = svg.querySelectorAll('#adalar path');
+                        // Select all paths inside any group with data-district="Adalar" (handles multiple island groups)
+                        const adalarpaths = svg.querySelectorAll('g[data-district="Adalar"] path');
                         // Check if ANY Adalar path is selected
                         const isAdalarSelected = Array.from(adalarpaths).some(path => path === selectedElementRef.current);
                         
@@ -337,14 +391,21 @@ const MapPage = () => {
 
             // Check if this is an Adalar path in Istanbul view
             if (currentView === 'istanbul') {
-                const id = event.target.id || event.target.getAttribute('id') || '';
-                const key = normalize(id.replace(/^path/i, '').replace(/\d+/g, ''));
+                // Check if the path's parent group has data-district attribute
+                const parentGroup = event.target.closest('g[data-district]');
+                if (!parentGroup) return;
+                
+                const districtName = decodeUnicode(parentGroup.getAttribute('data-district'));
+                if (!districtName) return;
+                
+                const key = normalize(districtName);
                 
                 if (key === 'adalar') {
                     // Reset all Adalar islands
                     const svg = mapRef.current?.querySelector('svg');
                     if (svg) {
-                        const adalarpaths = svg.querySelectorAll('#adalar path');
+                        // Select all paths inside any group with data-district="Adalar" (handles multiple island groups)
+                        const adalarpaths = svg.querySelectorAll('g[data-district="Adalar"] path');
                         // Check if ANY Adalar path is selected
                         const isAdalarSelected = Array.from(adalarpaths).some(path => path === selectedElementRef.current);
                         
@@ -395,8 +456,26 @@ const MapPage = () => {
                     }
                     return;
                 }
+                
+                // For all other districts in Istanbul view
+                // Reset hover effect, but keep selected state
+                if (event.target === selectedElementRef.current) {
+                    // Keep green if selected
+                    event.target.style.fill = '#28a745';
+                    event.target.style.cursor = 'pointer';
+                } else {
+                    // Restore original color if not selected
+                    const originalFill = event.target.dataset.originalFill || 'silver';
+                    event.target.style.fill = originalFill;
+                    event.target.style.cursor = 'default';
+                }
+                
+                // Clear hover state when leaving district
+                setHoveredProvince(null);
+                return;
             }
 
+            // For Turkey map provinces
             // Reset hover effect, but keep selected state
             if (event.target === selectedElementRef.current) {
                 // Keep green if selected
@@ -409,10 +488,8 @@ const MapPage = () => {
                 event.target.style.cursor = 'default';
             }
 
-            // Only hide province/district info if we're not moving to a child element
-            if (!event.relatedTarget || !event.currentTarget.contains(event.relatedTarget)) {
-                setHoveredProvince(null);
-            }
+            // Clear hover state when leaving province
+            setHoveredProvince(null);
         };
 
         const handleClick = (event) => {
@@ -421,21 +498,28 @@ const MapPage = () => {
 
             // If currently viewing Istanbul, treat clicks as district selection
             if (currentView === 'istanbul') {
-                const id = event.target.id || '';
-                const key = normalize(id.replace(/^path/i, '').replace(/\d+/g, ''));
-                const districtName = districtNameLookup[key];
-
-                if (!districtName) {
-                    console.warn('District name not found for path id', id);
+                // Check if the path's parent group has data-district attribute
+                const parentGroup = event.target.closest('g[data-district]');
+                if (!parentGroup) {
+                    console.warn('No parent group with data-district found for path');
                     return;
                 }
+                
+                const districtName = decodeUnicode(parentGroup.getAttribute('data-district'));
+                if (!districtName) {
+                    console.warn('District name not found in parent group');
+                    return;
+                }
+                
+                const key = normalize(districtName);
 
                 // Special handling for Adalar - select/deselect all islands
                 if (key === 'adalar') {
                     const svg = mapRef.current?.querySelector('svg');
                     if (!svg) return;
                     
-                    const adalarPaths = svg.querySelectorAll('#adalar path');
+                    // Select all paths inside any group with data-district="Adalar" (handles multiple island groups)
+                    const adalarPaths = svg.querySelectorAll('g[data-district="Adalar"] path');
                     
                     // Check if any island is currently selected
                     const isAnySelected = Array.from(adalarPaths).some(path => path === selectedElementRef.current);
@@ -454,7 +538,7 @@ const MapPage = () => {
                         // Deselect previous selection if exists (check for multi-path districts)
                         if (selectedElementRef.current) {
                             // Check if previous selection was Fatih
-                            const fatihPaths = svg.querySelectorAll('#fatih path');
+                            const fatihPaths = svg.querySelectorAll('g[data-district="Fatih"] path');
                             const wasFatih = Array.from(fatihPaths).some(path => path === selectedElementRef.current);
                             
                             if (wasFatih) {
@@ -621,7 +705,7 @@ const MapPage = () => {
             // If we don't have the plate code from SVG, try to match with our provinces data
             if (!plakaKodu && ilAdi) {
                 const foundCode = Object.keys(provinces).find(code =>
-                    provinces[code].toLowerCase() === ilAdi.toLowerCase()
+                    toTurkishLowerCase(provinces[code]) === toTurkishLowerCase(ilAdi)
                 );
                 plakaKodu = foundCode;
             }
@@ -720,7 +804,7 @@ const MapPage = () => {
                 mapContainer.removeEventListener('mouseleave', handleMapLeave);
             }
         };
-    }, [navigate, cityUsersData, currentView, districtNameLookup]);
+    }, [navigate, cityUsersData, currentView]);
 
     if (loading) {
         return (
