@@ -1,12 +1,15 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ReactComponent as TurkiyeHaritasi } from '../assets/TurkiyeHaritasi.svg';
+import { ReactComponent as IstanbulHaritasi } from '../assets/IstanbulHaritasi.svg';
+import istanbulDistrictsJson from '../assets/istanbul-district.json';
 import axiosInstance from '../api/axios';
 
 const MapPage = () => {
     const [hoveredProvince, setHoveredProvince] = useState(null);
     const [selectedProvince, setSelectedProvince] = useState(null);
     const [members, setMembers] = useState([]);
+    const [currentView, setCurrentView] = useState('turkiye'); // 'turkiye' | 'istanbul'
     const [cityUsersData, setCityUsersData] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -187,6 +190,32 @@ const MapPage = () => {
         setMembers(provinceMembers);
     };
 
+    // Normalize strings for matching path IDs to district names
+    const normalize = (s) => {
+        if (!s) return '';
+        // lower, remove diacritics, remove non-alphanum
+        const map = { 'ç': 'c', 'ğ': 'g', 'ı': 'i', 'İ': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u', 'â': 'a', 'Á':'a' };
+        return s.toLowerCase().split('').map(ch => map[ch] || ch).join('').replace(/[^a-z0-9]/g, '');
+    };
+
+    // Build lookup from normalized district name -> display name (first token from display_name)
+    const districtNameLookup = React.useMemo(() => {
+        const lookup = {};
+        try {
+            const features = istanbulDistrictsJson.features || [];
+            features.forEach(f => {
+                const display = f.properties?.display_name || '';
+                // first token before comma is district name
+                const district = display.split(',')[0].trim();
+                const key = normalize(district);
+                if (key) lookup[key] = district;
+            });
+        } catch (e) {
+            console.warn('Error building district lookup', e);
+        }
+        return lookup;
+    }, []);
+
     useEffect(() => {
         // Only set up event listeners after data is loaded
         if (Object.keys(cityUsersData).length === 0) {
@@ -197,23 +226,79 @@ const MapPage = () => {
         const findSvgElement = () => {
             if (!mapRef.current) return null;
 
-            // First try to find the specific ID
-            let element = mapRef.current.querySelector('#svg-turkiye-haritasi');
-
-            // If not found, try to find any SVG element
-            if (!element) {
-                element = mapRef.current.querySelector('svg');
-            }
-
-            // If still not found, the SVG might be nested
-            if (!element) {
-                element = mapRef.current.querySelector('[data-iladi]')?.closest('svg');
-            }
-
+            // Try to find any SVG element under the container (works for both Turkey and Istanbul SVGs)
+            let element = mapRef.current.querySelector('svg');
             return element;
         };
 
         const handleMouseOver = (event) => {
+            if (event.target.tagName !== 'path') return;
+
+            // Store original fill color if not already stored
+            if (!event.target.dataset.originalFill) {
+                const computedStyle = window.getComputedStyle(event.target);
+                event.target.dataset.originalFill = computedStyle.fill || 'silver';
+            }
+
+            // If we are in Istanbul view, treat hover as district
+            if (currentView === 'istanbul') {
+                const id = event.target.id || event.target.getAttribute('id') || '';
+                const key = normalize(id.replace(/^path/i, '').replace(/\d+/g, ''));
+                const districtName = districtNameLookup[key];
+                if (!districtName) return;
+
+                // Special handling for Adalar - hover all islands simultaneously
+                if (key === 'adalar') {
+                    const svg = mapRef.current?.querySelector('svg');
+                    if (svg) {
+                        const adalarpaths = svg.querySelectorAll('#adalar path');
+                        // Check if ANY Adalar path is selected
+                        const isAdalarSelected = Array.from(adalarpaths).some(path => path === selectedElementRef.current);
+                        
+                        adalarpaths.forEach(path => {
+                            if (!path.dataset.originalFill) {
+                                const computedStyle = window.getComputedStyle(path);
+                                path.dataset.originalFill = computedStyle.fill || 'silver';
+                            }
+                            // Don't change color if Adalar is already selected
+                            if (!isAdalarSelected) {
+                                path.style.fill = '#ff6b35';
+                            }
+                            path.style.cursor = 'pointer';
+                        });
+                    }
+                } else if (key === 'fatih') {
+                    // Special handling for Fatih - hover both paths (Fatih + old Eminönü) simultaneously
+                    const svg = mapRef.current?.querySelector('svg');
+                    if (svg) {
+                        const fatihPaths = svg.querySelectorAll('#fatih path');
+                        // Check if ANY Fatih path is selected
+                        const isFatihSelected = Array.from(fatihPaths).some(path => path === selectedElementRef.current);
+                        
+                        fatihPaths.forEach(path => {
+                            if (!path.dataset.originalFill) {
+                                const computedStyle = window.getComputedStyle(path);
+                                path.dataset.originalFill = computedStyle.fill || 'silver';
+                            }
+                            // Don't change color if Fatih is already selected
+                            if (!isFatihSelected) {
+                                path.style.fill = '#ff6b35';
+                            }
+                            path.style.cursor = 'pointer';
+                        });
+                    }
+                } else {
+                    if (event.target !== selectedElementRef.current) {
+                        event.target.style.fill = '#ff6b35';
+                    }
+                    event.target.style.cursor = 'pointer';
+                }
+                
+                setHoveredProvince({ name: districtName, code: '34' });
+                return;
+            }
+
+            // otherwise, existing province hover behavior
             if (event.target.tagName === 'path') {
                 // Look for data-iladi and data-plakakodu on the path itself or its parent
                 let ilAdi = event.target.getAttribute('data-iladi');
@@ -250,85 +335,358 @@ const MapPage = () => {
         };
 
         const handleMouseOut = (event) => {
-            if (event.target.tagName === 'path') {
-                // Reset hover effect, but keep selected state
-                if (event.target === selectedElementRef.current) {
-                    // Keep green if selected
-                    event.target.style.fill = '#28a745';
-                    event.target.style.cursor = 'pointer';
-                } else {
-                    // Clear if not selected
-                    event.target.style.fill = '';
-                    event.target.style.cursor = 'default';
+            if (event.target.tagName !== 'path') return;
+
+            // Check if this is an Adalar path in Istanbul view
+            if (currentView === 'istanbul') {
+                const id = event.target.id || event.target.getAttribute('id') || '';
+                const key = normalize(id.replace(/^path/i, '').replace(/\d+/g, ''));
+                
+                if (key === 'adalar') {
+                    // Reset all Adalar islands
+                    const svg = mapRef.current?.querySelector('svg');
+                    if (svg) {
+                        const adalarpaths = svg.querySelectorAll('#adalar path');
+                        // Check if ANY Adalar path is selected
+                        const isAdalarSelected = Array.from(adalarpaths).some(path => path === selectedElementRef.current);
+                        
+                        adalarpaths.forEach(path => {
+                            if (isAdalarSelected) {
+                                // Keep all Adalar paths green if any is selected
+                                path.style.fill = '#28a745';
+                                path.style.cursor = 'pointer';
+                            } else {
+                                const originalFill = path.dataset.originalFill || 'silver';
+                                path.style.fill = originalFill;
+                                path.style.cursor = 'default';
+                            }
+                        });
+                    }
+                    
+                    // Only hide province/district info if we're not moving to another island
+                    if (!event.relatedTarget || !event.currentTarget.contains(event.relatedTarget)) {
+                        setHoveredProvince(null);
+                    }
+                    return;
+                }
+                
+                if (key === 'fatih') {
+                    // Reset all Fatih paths
+                    const svg = mapRef.current?.querySelector('svg');
+                    if (svg) {
+                        const fatihPaths = svg.querySelectorAll('#fatih path');
+                        // Check if ANY Fatih path is selected
+                        const isFatihSelected = Array.from(fatihPaths).some(path => path === selectedElementRef.current);
+                        
+                        fatihPaths.forEach(path => {
+                            if (isFatihSelected) {
+                                // Keep all Fatih paths green if any is selected
+                                path.style.fill = '#28a745';
+                                path.style.cursor = 'pointer';
+                            } else {
+                                const originalFill = path.dataset.originalFill || 'silver';
+                                path.style.fill = originalFill;
+                                path.style.cursor = 'default';
+                            }
+                        });
+                    }
+                    
+                    // Only hide province/district info if we're not moving to another Fatih area
+                    if (!event.relatedTarget || !event.currentTarget.contains(event.relatedTarget)) {
+                        setHoveredProvince(null);
+                    }
+                    return;
                 }
             }
 
-            // Only hide province info if we're not moving to a child element
+            // Reset hover effect, but keep selected state
+            if (event.target === selectedElementRef.current) {
+                // Keep green if selected
+                event.target.style.fill = '#28a745';
+                event.target.style.cursor = 'pointer';
+            } else {
+                // Restore original color if not selected
+                const originalFill = event.target.dataset.originalFill || 'silver';
+                event.target.style.fill = originalFill;
+                event.target.style.cursor = 'default';
+            }
+
+            // Only hide province/district info if we're not moving to a child element
             if (!event.relatedTarget || !event.currentTarget.contains(event.relatedTarget)) {
                 setHoveredProvince(null);
             }
         };
 
         const handleClick = (event) => {
-            if (event.target.tagName === 'path') {
-                event.preventDefault();
+            if (event.target.tagName !== 'path') return;
+            event.preventDefault();
 
-                const parent = event.target.parentNode;
-                let plakaKodu = parent?.getAttribute('data-plakakodu') || event.target.getAttribute('data-plakakodu');
-                let ilAdi = parent?.getAttribute('data-iladi') || event.target.getAttribute('data-iladi');
+            // If currently viewing Istanbul, treat clicks as district selection
+            if (currentView === 'istanbul') {
+                const id = event.target.id || '';
+                const key = normalize(id.replace(/^path/i, '').replace(/\d+/g, ''));
+                const districtName = districtNameLookup[key];
 
-                // If we don't have the plate code from SVG, try to match with our provinces data
-                if (!plakaKodu && ilAdi) {
-                    // Find plate code by matching province name
-                    const foundCode = Object.keys(provinces).find(code =>
-                        provinces[code].toLowerCase() === ilAdi.toLowerCase()
-                    );
-                    plakaKodu = foundCode;
+                if (!districtName) {
+                    console.warn('District name not found for path id', id);
+                    return;
                 }
 
-                // If we still don't have province name but have code, get it from our data
-                if (!ilAdi && plakaKodu) {
-                    ilAdi = provinces[plakaKodu];
-                } else if (ilAdi) {
-                    // Decode Unicode escape sequences in province name
-                    const decodedName = decodeUnicodeString(ilAdi);
-                    ilAdi = decodedName;
-                }
-
-                if (plakaKodu && ilAdi) {
-                    // Check if clicking the same selected element (toggle off)
-                    if (event.target === selectedElementRef.current) {
-                        // Unselect - clear styling and state
-                        event.target.style.fill = '';
-                        event.target.style.cursor = 'default';
+                // Special handling for Adalar - select/deselect all islands
+                if (key === 'adalar') {
+                    const svg = mapRef.current?.querySelector('svg');
+                    if (!svg) return;
+                    
+                    const adalarPaths = svg.querySelectorAll('#adalar path');
+                    
+                    // Check if any island is currently selected
+                    const isAnySelected = Array.from(adalarPaths).some(path => path === selectedElementRef.current);
+                    
+                    if (isAnySelected) {
+                        // Deselect all islands
+                        adalarPaths.forEach(path => {
+                            const originalFill = path.dataset.originalFill || 'silver';
+                            path.style.fill = originalFill;
+                            path.style.cursor = 'default';
+                        });
                         selectedElementRef.current = null;
                         setSelectedProvince(null);
                         setMembers([]);
                     } else {
-                        // Clear previous selection
+                        // Deselect previous selection if exists (check for multi-path districts)
                         if (selectedElementRef.current) {
-                            selectedElementRef.current.style.fill = '';
-                            selectedElementRef.current.style.cursor = 'default';
+                            // Check if previous selection was Fatih
+                            const fatihPaths = svg.querySelectorAll('#fatih path');
+                            const wasFatih = Array.from(fatihPaths).some(path => path === selectedElementRef.current);
+                            
+                            if (wasFatih) {
+                                fatihPaths.forEach(path => {
+                                    const originalFill = path.dataset.originalFill || 'silver';
+                                    path.style.fill = originalFill;
+                                    path.style.cursor = 'default';
+                                });
+                            } else {
+                                // Single path district
+                                const originalFill = selectedElementRef.current.dataset.originalFill || 'silver';
+                                selectedElementRef.current.style.fill = originalFill;
+                                selectedElementRef.current.style.cursor = 'default';
+                            }
                         }
+                        
+                        // Select all islands
+                        adalarPaths.forEach(path => {
+                            path.style.fill = '#28a745';
+                            path.style.cursor = 'pointer';
+                        });
+                        
+                        // Store the first island as selected reference
+                        selectedElementRef.current = adalarPaths[0];
 
-                        // Set new selection
-                        selectedElementRef.current = event.target;
-                        event.target.style.fill = '#28a745'; // Green for selected
-                        event.target.style.cursor = 'pointer';
+                        // For members, try to find users matching district name
+                        let districtMembers = [];
+                        const candidate = Object.keys(cityUsersData).find(k => normalize(k).includes(key) || normalize(k) === key);
+                        if (candidate) districtMembers = cityUsersData[candidate] || [];
+                        else districtMembers = getMembersByProvince('34', 'İstanbul');
 
-                        // Format plate code with leading zero
-                        const formattedCode = plakaKodu.padStart(2, '0');
-                        handleProvinceClick(formattedCode, ilAdi);
+                        setSelectedProvince({ code: '34', name: `İstanbul - ${districtName}` });
+                        setMembers(districtMembers);
                     }
-                } else {
-                    console.warn('Province data not found for clicked element');
+                    return;
                 }
+
+                // Special handling for Fatih - select/deselect both paths (Fatih + old Eminönü)
+                if (key === 'fatih') {
+                    const svg = mapRef.current?.querySelector('svg');
+                    if (!svg) return;
+                    
+                    const fatihPaths = svg.querySelectorAll('#fatih path');
+                    
+                    // Check if any path is currently selected
+                    const isAnySelected = Array.from(fatihPaths).some(path => path === selectedElementRef.current);
+                    
+                    if (isAnySelected) {
+                        // Deselect all paths
+                        fatihPaths.forEach(path => {
+                            const originalFill = path.dataset.originalFill || 'silver';
+                            path.style.fill = originalFill;
+                            path.style.cursor = 'default';
+                        });
+                        selectedElementRef.current = null;
+                        setSelectedProvince(null);
+                        setMembers([]);
+                    } else {
+                        // Deselect previous selection if exists (check for multi-path districts)
+                        if (selectedElementRef.current) {
+                            // Check if previous selection was Adalar
+                            const adalarPaths = svg.querySelectorAll('#adalar path');
+                            const wasAdalar = Array.from(adalarPaths).some(path => path === selectedElementRef.current);
+                            
+                            if (wasAdalar) {
+                                adalarPaths.forEach(path => {
+                                    const originalFill = path.dataset.originalFill || 'silver';
+                                    path.style.fill = originalFill;
+                                    path.style.cursor = 'default';
+                                });
+                            } else {
+                                // Single path district
+                                const originalFill = selectedElementRef.current.dataset.originalFill || 'silver';
+                                selectedElementRef.current.style.fill = originalFill;
+                                selectedElementRef.current.style.cursor = 'default';
+                            }
+                        }
+                        
+                        // Select all Fatih paths
+                        fatihPaths.forEach(path => {
+                            path.style.fill = '#28a745';
+                            path.style.cursor = 'pointer';
+                        });
+                        
+                        // Store the first path as selected reference
+                        selectedElementRef.current = fatihPaths[0];
+
+                        // For members, try to find users matching district name
+                        let districtMembers = [];
+                        const candidate = Object.keys(cityUsersData).find(k => normalize(k).includes(key) || normalize(k) === key);
+                        if (candidate) districtMembers = cityUsersData[candidate] || [];
+                        else districtMembers = getMembersByProvince('34', 'İstanbul');
+
+                        setSelectedProvince({ code: '34', name: `İstanbul - ${districtName}` });
+                        setMembers(districtMembers);
+                    }
+                    return;
+                }
+
+                // Toggle selection for other districts
+                if (event.target === selectedElementRef.current) {
+                    const originalFill = event.target.dataset.originalFill || 'silver';
+                    event.target.style.fill = originalFill;
+                    event.target.style.cursor = 'default';
+                    selectedElementRef.current = null;
+                    setSelectedProvince(null);
+                    setMembers([]);
+                } else {
+                    // Deselect previous selection if exists (check for multi-path districts)
+                    if (selectedElementRef.current) {
+                        const svg = mapRef.current?.querySelector('svg');
+                        if (svg) {
+                            // Check if previous selection was Adalar
+                            const adalarPaths = svg.querySelectorAll('#adalar path');
+                            const wasAdalar = Array.from(adalarPaths).some(path => path === selectedElementRef.current);
+                            
+                            // Check if previous selection was Fatih
+                            const fatihPaths = svg.querySelectorAll('#fatih path');
+                            const wasFatih = Array.from(fatihPaths).some(path => path === selectedElementRef.current);
+                            
+                            if (wasAdalar) {
+                                adalarPaths.forEach(path => {
+                                    const originalFill = path.dataset.originalFill || 'silver';
+                                    path.style.fill = originalFill;
+                                    path.style.cursor = 'default';
+                                });
+                            } else if (wasFatih) {
+                                fatihPaths.forEach(path => {
+                                    const originalFill = path.dataset.originalFill || 'silver';
+                                    path.style.fill = originalFill;
+                                    path.style.cursor = 'default';
+                                });
+                            } else {
+                                // Single path district
+                                const originalFill = selectedElementRef.current.dataset.originalFill || 'silver';
+                                selectedElementRef.current.style.fill = originalFill;
+                                selectedElementRef.current.style.cursor = 'default';
+                            }
+                        }
+                    }
+                    selectedElementRef.current = event.target;
+                    event.target.style.fill = '#28a745';
+                    event.target.style.cursor = 'pointer';
+
+                    // For members, try to find users matching district name; otherwise fallback to Istanbul province
+                    let districtMembers = [];
+                    // Try exact key match in cityUsersData
+                    const candidate = Object.keys(cityUsersData).find(k => normalize(k).includes(key) || normalize(k) === key);
+                    if (candidate) districtMembers = cityUsersData[candidate] || [];
+                    else districtMembers = getMembersByProvince('34', 'İstanbul');
+
+                    setSelectedProvince({ code: '34', name: `İstanbul - ${districtName}` });
+                    setMembers(districtMembers);
+                }
+
+                return;
             }
+
+            // Otherwise, existing province click logic
+            const parent = event.target.parentNode;
+            let plakaKodu = parent?.getAttribute('data-plakakodu') || event.target.getAttribute('data-plakakodu');
+            let ilAdi = parent?.getAttribute('data-iladi') || event.target.getAttribute('data-iladi');
+
+            // If we don't have the plate code from SVG, try to match with our provinces data
+            if (!plakaKodu && ilAdi) {
+                const foundCode = Object.keys(provinces).find(code =>
+                    provinces[code].toLowerCase() === ilAdi.toLowerCase()
+                );
+                plakaKodu = foundCode;
+            }
+
+            if (!ilAdi && plakaKodu) {
+                ilAdi = provinces[plakaKodu];
+            } else if (ilAdi) {
+                ilAdi = decodeUnicodeString(ilAdi);
+            }
+
+            if (plakaKodu && ilAdi) {
+                // If Istanbul clicked, open Istanbul map
+                const formattedCode = plakaKodu.padStart(2, '0');
+                if (formattedCode === '34') {
+                    // switch to Istanbul view
+                    setCurrentView('istanbul');
+                    // clear selections
+                    if (selectedElementRef.current) {
+                        const originalFill = selectedElementRef.current.dataset.originalFill || 'silver';
+                        selectedElementRef.current.style.fill = originalFill;
+                        selectedElementRef.current.style.cursor = 'default';
+                        selectedElementRef.current = null;
+                    }
+                    setHoveredProvince(null);
+                    setSelectedProvince(null);
+                    setMembers([]);
+                    return;
+                }
+
+                // Check if clicking the same selected element (toggle off)
+                if (event.target === selectedElementRef.current) {
+                    const originalFill = event.target.dataset.originalFill || 'silver';
+                    event.target.style.fill = originalFill;
+                    event.target.style.cursor = 'default';
+                    selectedElementRef.current = null;
+                    setSelectedProvince(null);
+                    setMembers([]);
+                } else {
+                    if (selectedElementRef.current) {
+                        const originalFill = selectedElementRef.current.dataset.originalFill || 'silver';
+                        selectedElementRef.current.style.fill = originalFill;
+                        selectedElementRef.current.style.cursor = 'default';
+                    }
+                    selectedElementRef.current = event.target;
+                    event.target.style.fill = '#28a745';
+                    event.target.style.cursor = 'pointer';
+
+                    handleProvinceClick(formattedCode, ilAdi);
+                }
+            } else {
+                console.warn('Province data not found for clicked element');
+            }
+        };
+
+        // Handler to clear hover state when mouse leaves the entire map container
+        const handleMapLeave = () => {
+            setHoveredProvince(null);
         };
 
         // Use a timeout to ensure the SVG is fully loaded and rendered
         const timeoutId = setTimeout(() => {
             const element = findSvgElement();
+            const mapContainer = mapRef.current;
 
             if (element) {
                 element.addEventListener('mouseover', handleMouseOver);
@@ -341,19 +699,30 @@ const MapPage = () => {
             } else {
                 console.warn('SVG element not found. Make sure the SVG file has proper data attributes.');
             }
+
+            // Add mouseleave handler to map container to clear hover state
+            if (mapContainer) {
+                mapContainer.addEventListener('mouseleave', handleMapLeave);
+            }
         }, 100);
 
         return () => {
             clearTimeout(timeoutId);
             const element = mapRef.current?.svgElement;
+            const mapContainer = mapRef.current;
+            
             if (element) {
                 element.removeEventListener('mouseover', handleMouseOver);
                 element.removeEventListener('mousemove', handleMouseMove);
                 element.removeEventListener('mouseout', handleMouseOut);
                 element.removeEventListener('click', handleClick);
             }
+            
+            if (mapContainer) {
+                mapContainer.removeEventListener('mouseleave', handleMapLeave);
+            }
         };
-    }, [navigate, cityUsersData]);
+    }, [navigate, cityUsersData, currentView, districtNameLookup]);
 
     if (loading) {
         return (
@@ -492,7 +861,68 @@ const MapPage = () => {
                     <div className="svg-turkiye-haritasi" ref={mapRef} style={{
                         width: '100%'
                     }}>
-                        <TurkiyeHaritasi />
+                        {currentView === 'turkiye' ? (
+                            <TurkiyeHaritasi style={{ width: '100%', height: 'auto' }} />
+                        ) : (
+                            <div style={{ position: 'relative', width: '100%' }}>
+                                <button
+                                    onClick={() => {
+                                        // clear any selected district visuals
+                                        if (selectedElementRef.current) {
+                                            // Check if selected element is part of Adalar or Fatih
+                                            const svg = mapRef.current?.querySelector('svg');
+                                            if (svg) {
+                                                const adalarPaths = svg.querySelectorAll('#adalar path');
+                                                const isAdalarSelected = Array.from(adalarPaths).some(path => path === selectedElementRef.current);
+                                                
+                                                const fatihPaths = svg.querySelectorAll('#fatih path');
+                                                const isFatihSelected = Array.from(fatihPaths).some(path => path === selectedElementRef.current);
+                                                
+                                                if (isAdalarSelected) {
+                                                    // Reset all Adalar islands
+                                                    adalarPaths.forEach(path => {
+                                                        const originalFill = path.dataset.originalFill || 'silver';
+                                                        path.style.fill = originalFill;
+                                                        path.style.cursor = 'default';
+                                                    });
+                                                } else if (isFatihSelected) {
+                                                    // Reset all Fatih paths
+                                                    fatihPaths.forEach(path => {
+                                                        const originalFill = path.dataset.originalFill || 'silver';
+                                                        path.style.fill = originalFill;
+                                                        path.style.cursor = 'default';
+                                                    });
+                                                } else {
+                                                    // Reset single element
+                                                    const originalFill = selectedElementRef.current.dataset.originalFill || 'silver';
+                                                    selectedElementRef.current.style.fill = originalFill;
+                                                    selectedElementRef.current.style.cursor = 'default';
+                                                }
+                                            }
+                                            selectedElementRef.current = null;
+                                        }
+                                        setCurrentView('turkiye');
+                                        setHoveredProvince(null);
+                                        setSelectedProvince(null);
+                                        setMembers([]);
+                                    }}
+                                    style={{
+                                        position: 'absolute',
+                                        zIndex: 10,
+                                        left: 10,
+                                        top: 10,
+                                        background: '#fff',
+                                        border: '1px solid #ddd',
+                                        padding: '6px 10px',
+                                        cursor: 'pointer',
+                                        borderRadius: 4
+                                    }}
+                                >
+                                    ← Geri
+                                </button>
+                                <IstanbulHaritasi style={{ width: '100%', height: 'auto', display: 'block' }} />
+                            </div>
+                        )}
                     </div>
                 </div>
 
