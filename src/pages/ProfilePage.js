@@ -70,7 +70,11 @@ const ProfilePage = () => {
             console.log('Cities API response data:', data);
             if (data.success && data.cities) {
                 console.log('Setting cities:', data.cities.length, 'cities');
-                setCities(data.cities);
+                // Sort cities with Turkish locale
+                const sortedCities = [...data.cities].sort((a, b) => 
+                    a.localeCompare(b, 'tr-TR', { sensitivity: 'base' })
+                );
+                setCities(sortedCities);
                 return true; // Success
             } else {
                 console.error('Cities API returned success: false or no cities');
@@ -91,9 +95,13 @@ const ProfilePage = () => {
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const data = await response.json();
             if (data.success) {
+                // Sort districts with Turkish locale
+                const sortedDistricts = [...data.districts].sort((a, b) => 
+                    a.localeCompare(b, 'tr-TR', { sensitivity: 'base' })
+                );
                 setDistrictsByCity(prev => ({
                     ...prev,
-                    [cityName]: data.districts
+                    [cityName]: sortedDistricts
                 }));
             } else {
                 console.error('Error fetching districts: success false', data);
@@ -114,9 +122,13 @@ const ProfilePage = () => {
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const data = await response.json();
             if (data.success) {
+                // Sort neighborhoods with Turkish locale
+                const sortedNeighborhoods = [...data.neighborhoods].sort((a, b) => 
+                    a.localeCompare(b, 'tr-TR', { sensitivity: 'base' })
+                );
                 setNeighborhoodsByDistrict(prev => ({
                     ...prev,
-                    [districtName]: data.neighborhoods
+                    [districtName]: sortedNeighborhoods
                 }));
             } else {
                 console.error('Error fetching neighborhoods: success false', data);
@@ -136,7 +148,11 @@ const ProfilePage = () => {
             // If API failed, use fallback
             if (!success) {
                 console.log('Using fallback cities list');
-                setCities(fallbackCities);
+                // Sort fallback cities with Turkish locale
+                const sortedFallbackCities = [...fallbackCities].sort((a, b) => 
+                    a.localeCompare(b, 'tr-TR', { sensitivity: 'base' })
+                );
+                setCities(sortedFallbackCities);
             }
         };
         loadCities();
