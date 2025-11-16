@@ -152,6 +152,36 @@ const MapPage = () => {
 
     // Get members by province name
     const getMembersByProvince = (plateCode, provinceName) => {
+        // Special handling for Istanbul - aggregate all districts
+        if (plateCode === '34' || toTurkishLowerCase(provinceName).includes('istanbul')) {
+            // Collect all Istanbul district members
+            let allIstanbulMembers = [];
+            const istanbulDistricts = [
+                'Adalar', 'Arnavutköy', 'Ataşehir', 'Avcılar', 'Bağcılar', 'Bahçelievler', 
+                'Bakırköy', 'Başakşehir', 'Bayrampaşa', 'Beşiktaş', 'Beykoz', 'Beylikdüzü', 
+                'Beyoğlu', 'Büyükçekmece', 'Çatalca', 'Çekmeköy', 'Esenler', 'Esenyurt', 
+                'Eyüpsultan', 'Fatih', 'Gaziosmanpaşa', 'Güngören', 'Kadıköy', 'Kağıthane', 
+                'Kartal', 'Küçükçekmece', 'Maltepe', 'Pendik', 'Sancaktepe', 'Sarıyer', 
+                'Şile', 'Silivri', 'Şişli', 'Sultanbeyli', 'Sultangazi', 'Tuzla', 
+                'Ümraniye', 'Üsküdar', 'Zeytinburnu'
+            ];
+            
+            // Check each district in cityUsersData
+            Object.keys(cityUsersData).forEach(key => {
+                const normalizedKey = normalize(key);
+                const isIstanbulDistrict = istanbulDistricts.some(district => 
+                    normalize(district) === normalizedKey
+                );
+                if (isIstanbulDistrict && cityUsersData[key]) {
+                    allIstanbulMembers = allIstanbulMembers.concat(cityUsersData[key]);
+                }
+            });
+            
+            if (allIstanbulMembers.length > 0) {
+                return allIstanbulMembers;
+            }
+        }
+        
         // Direct match first
         if (cityUsersData[provinceName]) {
             return cityUsersData[provinceName];
@@ -178,6 +208,35 @@ const MapPage = () => {
         }
 
         return [];
+    };
+
+    // Get members count by district name (for Istanbul districts)
+    const getDistrictMemberCount = (districtName) => {
+        if (!districtName) return 0;
+        
+        const key = normalize(districtName);
+        const candidate = Object.keys(cityUsersData).find(k => 
+            normalize(k).includes(key) || normalize(k) === key
+        );
+        
+        console.log('District hover debug:', {
+            districtName,
+            normalizedKey: key,
+            candidate,
+            availableKeys: Object.keys(cityUsersData),
+            count: candidate ? (cityUsersData[candidate] || []).length : 0
+        });
+        
+        if (candidate) {
+            return (cityUsersData[candidate] || []).length;
+        }
+        
+        // Fallback: try direct match
+        if (cityUsersData[districtName]) {
+            return cityUsersData[districtName].length;
+        }
+        
+        return 0;
     };
 
     // Handle province click - show member names
@@ -567,8 +626,10 @@ const MapPage = () => {
                         // For members, try to find users matching district name
                         let districtMembers = [];
                         const candidate = Object.keys(cityUsersData).find(k => normalize(k).includes(key) || normalize(k) === key);
-                        if (candidate) districtMembers = cityUsersData[candidate] || [];
-                        else districtMembers = getMembersByProvince('34', 'İstanbul');
+                        if (candidate) {
+                            districtMembers = cityUsersData[candidate] || [];
+                        }
+                        // Don't fallback to all Istanbul - if no candidate found, keep empty array
 
                         setSelectedProvince({ code: '34', name: `İstanbul - ${districtName}` });
                         setMembers(districtMembers);
@@ -629,8 +690,10 @@ const MapPage = () => {
                         // For members, try to find users matching district name
                         let districtMembers = [];
                         const candidate = Object.keys(cityUsersData).find(k => normalize(k).includes(key) || normalize(k) === key);
-                        if (candidate) districtMembers = cityUsersData[candidate] || [];
-                        else districtMembers = getMembersByProvince('34', 'İstanbul');
+                        if (candidate) {
+                            districtMembers = cityUsersData[candidate] || [];
+                        }
+                        // Don't fallback to all Istanbul - if no candidate found, keep empty array
 
                         setSelectedProvince({ code: '34', name: `İstanbul - ${districtName}` });
                         setMembers(districtMembers);
@@ -683,12 +746,14 @@ const MapPage = () => {
                     event.target.style.fill = '#28a745';
                     event.target.style.cursor = 'pointer';
 
-                    // For members, try to find users matching district name; otherwise fallback to Istanbul province
+                    // For members, try to find users matching district name
                     let districtMembers = [];
                     // Try exact key match in cityUsersData
                     const candidate = Object.keys(cityUsersData).find(k => normalize(k).includes(key) || normalize(k) === key);
-                    if (candidate) districtMembers = cityUsersData[candidate] || [];
-                    else districtMembers = getMembersByProvince('34', 'İstanbul');
+                    if (candidate) {
+                        districtMembers = cityUsersData[candidate] || [];
+                    }
+                    // Don't fallback to all Istanbul - if no candidate found, keep empty array
 
                     setSelectedProvince({ code: '34', name: `İstanbul - ${districtName}` });
                     setMembers(districtMembers);
@@ -890,9 +955,16 @@ const MapPage = () => {
                                     <p style={{ margin: '0', fontSize: '16px', fontWeight: 'bold', lineHeight: '1.1', wordBreak: 'break-word', color: '#333333' }}>
                                         {hoveredProvince.name}
                                     </p>
-                                    {currentView !== 'istanbul' && (
+                                    {currentView !== 'istanbul' ? (
                                         <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '14px' }}>
-                                            Plaka: {hoveredProvince.code}
+                                            Plaka: {hoveredProvince.code} | Üye: {(() => {
+                                                const hoveredMembers = getMembersByProvince(hoveredProvince.code, hoveredProvince.name);
+                                                return hoveredMembers.length;
+                                            })()}
+                                        </p>
+                                    ) : (
+                                        <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '14px' }}>
+                                            Üye: {getDistrictMemberCount(hoveredProvince.name)}
                                         </p>
                                     )}
                                 </div>
