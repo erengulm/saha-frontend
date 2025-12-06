@@ -493,6 +493,11 @@ const MapPage = () => {
     }, []);
 
     useEffect(() => {
+        // Only set up event listeners for Turkish map (not world map which uses React events)
+        if (activeTab === 'world') {
+            return;
+        }
+
         // Only set up event listeners after data is loaded
         if (Object.keys(cityUsersData).length === 0) {
             return;
@@ -1039,7 +1044,7 @@ const MapPage = () => {
                 mapContainer.removeEventListener('mouseleave', handleMapLeave);
             }
         };
-    }, [navigate, cityUsersData, currentView]);
+    }, [navigate, cityUsersData, currentView, activeTab]);
 
     if (loading) {
         return (
