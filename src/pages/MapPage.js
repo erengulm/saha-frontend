@@ -1,21 +1,191 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ReactComponent as TurkiyeHaritasi } from '../assets/TurkiyeHaritasi.svg';
 import { ReactComponent as IstanbulHaritasi } from '../assets/IstanbulHaritasi.svg';
 import istanbulDistrictsJson from '../assets/istanbul-district.json';
+import worldCountryGeoJson from '../assets/world-country.json';
 import axiosInstance from '../api/axios';
+import { geoPath, geoMercator } from 'd3-geo';
+
+// World Map Component
+const WorldMap = ({ hoveredCountry, setHoveredCountry, selectedCountry, setSelectedCountry, countryNames }) => {
+    // Create projection and path generator
+    const projection = useMemo(() => {
+        return geoMercator()
+            .scale(220)
+            .center([0, 15])
+            .translate([718, 400]);
+    }, []);
+    
+    const pathGenerator = useMemo(() => geoPath().projection(projection), [projection]);
+    
+    const handleMouseOver = (e, feature) => {
+        // GeoJSON uses properties.ISO_A3 (3-letter code) and properties.NAME_TR (Turkish name)
+        const iso3 = feature.properties?.ISO_A3 || '';
+        const name = feature.properties?.NAME || '';
+        // Create unique code by combining ISO_A3 and NAME for countries with -99 code
+        const code = iso3 === '-99' ? `${iso3}_${name}` : iso3;
+        const turkishName = feature.properties?.NAME_TR;
+        const englishName = name;
+        // Use Turkish name if available, otherwise try countryNames mapping, fallback to English name
+        const displayName = turkishName || countryNames[iso3.toLowerCase()] || countryNames[iso3] || englishName;
+        setHoveredCountry({ code, name: displayName });
+    };
+    
+    const handleMouseOut = (e) => {
+        setHoveredCountry(null);
+    };
+    
+    const handleClick = (e, feature) => {
+        // GeoJSON uses properties.ISO_A3 (3-letter code) and properties.NAME_TR (Turkish name)
+        const iso3 = feature.properties?.ISO_A3 || '';
+        const name = feature.properties?.NAME || '';
+        // Create unique code by combining ISO_A3 and NAME for countries with -99 code
+        const code = iso3 === '-99' ? `${iso3}_${name}` : iso3;
+        const turkishName = feature.properties?.NAME_TR;
+        const englishName = name;
+        // Use Turkish name if available, otherwise try countryNames mapping, fallback to English name
+        const displayName = turkishName || countryNames[iso3.toLowerCase()] || countryNames[iso3] || englishName;
+        
+        // Toggle selection
+        if (selectedCountry?.code === code) {
+            setSelectedCountry(null);
+        } else {
+            setSelectedCountry({ code, name: displayName });
+        }
+    };
+    
+    // Determine fill color based on hover/selected state
+    const getFillColor = (code) => {
+        if (selectedCountry?.code === code) {
+            return '#28a745';
+        }
+        if (hoveredCountry?.code === code) {
+            return '#ff6b35';
+        }
+        return '#c0c0c0';
+    };
+    
+    return (
+        <svg 
+            viewBox="0 0 1436 750" 
+            style={{ width: '100%', height: 'auto' }}
+            preserveAspectRatio="xMidYMid meet"
+        >
+            {worldCountryGeoJson.features.map((feature, index) => {
+                const pathData = pathGenerator(feature);
+                if (!pathData) return null;
+                
+                // Use properties.ISO_A3 (3-letter code like "TUR", "USA", etc.)
+                const iso3 = feature.properties?.ISO_A3 || `country-${index}`;
+                const name = feature.properties?.NAME || '';
+                // Create unique code by combining ISO_A3 and NAME for countries with -99 code
+                const code = iso3 === '-99' ? `${iso3}_${name}` : iso3;
+                
+                return (
+                    <path
+                        key={`${code}-${index}`}
+                        d={pathData}
+                        fill={getFillColor(code)}
+                        stroke="#333"
+                        strokeWidth="0.5"
+                        strokeLinejoin="round"
+                        strokeLinecap="round"
+                        paintOrder="fill stroke"
+                        style={{ cursor: 'pointer', transition: 'fill 0.2s ease' }}
+                        onMouseOver={(e) => handleMouseOver(e, feature)}
+                        onMouseOut={handleMouseOut}
+                        onClick={(e) => handleClick(e, feature)}
+                    />
+                );
+            })}
+        </svg>
+    );
+};
 
 const MapPage = () => {
     const [hoveredProvince, setHoveredProvince] = useState(null);
     const [selectedProvince, setSelectedProvince] = useState(null);
     const [members, setMembers] = useState([]);
+    const [activeTab, setActiveTab] = useState('turkiye'); // 'turkiye' | 'world'
     const [currentView, setCurrentView] = useState('turkiye'); // 'turkiye' | 'istanbul'
+    const [hoveredCountry, setHoveredCountry] = useState(null);
+    const [selectedCountry, setSelectedCountry] = useState(null);
     const [cityUsersData, setCityUsersData] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const mapRef = useRef(null);
     const selectedElementRef = useRef(null);
     const navigate = useNavigate();
+
+    // Country code to Turkish name mapping (ISO 3166-1 alpha-3)
+    const countryNames = {
+        'AFG': 'Afganistan', 'ALB': 'Arnavutluk', 'DZA': 'Cezayir', 'ASM': 'Amerikan Samoası',
+        'AND': 'Andorra', 'AGO': 'Angola', 'AIA': 'Anguilla', 'ATA': 'Antarktika',
+        'ATG': 'Antigua ve Barbuda', 'ARG': 'Arjantin', 'ARM': 'Ermenistan', 'ABW': 'Aruba',
+        'AUS': 'Avustralya', 'AUT': 'Avusturya', 'AZE': 'Azerbaycan', 'BHS': 'Bahamalar',
+        'BHR': 'Bahreyn', 'BGD': 'Bangladeş', 'BRB': 'Barbados', 'BLR': 'Belarus',
+        'BEL': 'Belçika', 'BLZ': 'Belize', 'BEN': 'Benin', 'BMU': 'Bermuda',
+        'BTN': 'Bhutan', 'BOL': 'Bolivya', 'BIH': 'Bosna Hersek', 'BWA': 'Botsvana',
+        'BVT': 'Bouvet Adası', 'BRA': 'Brezilya', 'BRN': 'Brunei', 'BGR': 'Bulgaristan',
+        'BFA': 'Burkina Faso', 'BDI': 'Burundi', 'KHM': 'Kamboçya', 'CMR': 'Kamerun',
+        'CAN': 'Kanada', 'CPV': 'Cabo Verde', 'CYM': 'Cayman Adaları', 'CAF': 'Orta Afrika Cumhuriyeti',
+        'TCD': 'Çad', 'CHL': 'Şili', 'CHN': 'Çin', 'CXR': 'Christmas Adası',
+        'CCK': 'Cocos Adaları', 'COL': 'Kolombiya', 'COM': 'Komorlar', 'COG': 'Kongo',
+        'COD': 'Kongo Demokratik Cumhuriyeti', 'COK': 'Cook Adaları', 'CRI': 'Kosta Rika', 'CIV': 'Fildişi Sahili',
+        'HRV': 'Hırvatistan', 'CUB': 'Küba', 'CYP': 'Kıbrıs', 'CZE': 'Çekya',
+        'DNK': 'Danimarka', 'DJI': 'Cibuti', 'DMA': 'Dominika', 'DOM': 'Dominik Cumhuriyeti',
+        'ECU': 'Ekvador', 'EGY': 'Mısır', 'SLV': 'El Salvador', 'GNQ': 'Ekvator Ginesi',
+        'ERI': 'Eritre', 'EST': 'Estonya', 'ETH': 'Etiyopya', 'FLK': 'Falkland Adaları',
+        'FRO': 'Faroe Adaları', 'FJI': 'Fiji', 'FIN': 'Finlandiya', 'FRA': 'Fransa',
+        'GUF': 'Fransız Guyanası', 'PYF': 'Fransız Polinezyası', 'ATF': 'Fransız Güney Toprakları',
+        'GAB': 'Gabon', 'GMB': 'Gambiya', 'GEO': 'Gürcistan', 'DEU': 'Almanya',
+        'GHA': 'Gana', 'GIB': 'Cebelitarık', 'GRC': 'Yunanistan', 'GRL': 'Grönland',
+        'GRD': 'Grenada', 'GLP': 'Guadeloupe', 'GUM': 'Guam', 'GTM': 'Guatemala',
+        'GGY': 'Guernsey', 'GIN': 'Gine', 'GNB': 'Gine-Bissau', 'GUY': 'Guyana',
+        'HTI': 'Haiti', 'HMD': 'Heard ve McDonald Adaları', 'VAT': 'Vatikan',
+        'HND': 'Honduras', 'HKG': 'Hong Kong', 'HUN': 'Macaristan', 'ISL': 'İzlanda',
+        'IND': 'Hindistan', 'IDN': 'Endonezya', 'IRN': 'İran', 'IRQ': 'Irak',
+        'IRL': 'İrlanda', 'IMN': 'Man Adası', 'ISR': 'İsrail', 'ITA': 'İtalya',
+        'JAM': 'Jamaika', 'JPN': 'Japonya', 'JEY': 'Jersey', 'JOR': 'Ürdün',
+        'KAZ': 'Kazakistan', 'KEN': 'Kenya', 'KIR': 'Kiribati', 'PRK': 'Kuzey Kore',
+        'KOR': 'Güney Kore', 'KWT': 'Kuveyt', 'KGZ': 'Kırgızistan', 'LAO': 'Laos',
+        'LVA': 'Letonya', 'LBN': 'Lübnan', 'LSO': 'Lesotho', 'LBR': 'Liberya',
+        'LBY': 'Libya', 'LIE': 'Lihtenştayn', 'LTU': 'Litvanya', 'LUX': 'Lüksemburg',
+        'MAC': 'Makao', 'MKD': 'Kuzey Makedonya', 'MDG': 'Madagaskar', 'MWI': 'Malavi',
+        'MYS': 'Malezya', 'MDV': 'Maldivler', 'MLI': 'Mali', 'MLT': 'Malta',
+        'MHL': 'Marshall Adaları', 'MTQ': 'Martinik', 'MRT': 'Moritanya', 'MUS': 'Mauritius',
+        'MYT': 'Mayotte', 'MEX': 'Meksika', 'FSM': 'Mikronezya', 'MDA': 'Moldova',
+        'MCO': 'Monako', 'MNG': 'Moğolistan', 'MNE': 'Karadağ', 'MSR': 'Montserrat',
+        'MAR': 'Fas', 'MOZ': 'Mozambik', 'MMR': 'Myanmar', 'NAM': 'Namibya',
+        'NRU': 'Nauru', 'NPL': 'Nepal', 'NLD': 'Hollanda', 'NCL': 'Yeni Kaledonya',
+        'NZL': 'Yeni Zelanda', 'NIC': 'Nikaragua', 'NER': 'Nijer', 'NGA': 'Nijerya',
+        'NIU': 'Niue', 'NFK': 'Norfolk Adası', 'MNP': 'Kuzey Mariana Adaları', 'NOR': 'Norveç',
+        'OMN': 'Umman', 'PAK': 'Pakistan', 'PLW': 'Palau', 'PSE': 'Filistin',
+        'PAN': 'Panama', 'PNG': 'Papua Yeni Gine', 'PRY': 'Paraguay', 'PER': 'Peru',
+        'PHL': 'Filipinler', 'PCN': 'Pitcairn Adaları', 'POL': 'Polonya', 'PRT': 'Portekiz',
+        'PRI': 'Porto Riko', 'QAT': 'Katar', 'REU': 'Réunion', 'ROU': 'Romanya',
+        'RUS': 'Rusya', 'RWA': 'Ruanda', 'BLM': 'Saint Barthélemy', 'SHN': 'Saint Helena',
+        'KNA': 'Saint Kitts ve Nevis', 'LCA': 'Saint Lucia', 'MAF': 'Saint Martin',
+        'SPM': 'Saint Pierre ve Miquelon', 'VCT': 'Saint Vincent ve Grenadinler',
+        'WSM': 'Samoa', 'SMR': 'San Marino', 'STP': 'São Tomé ve Príncipe', 'SAU': 'Suudi Arabistan',
+        'SEN': 'Senegal', 'SRB': 'Sırbistan', 'SYC': 'Seyşeller', 'SLE': 'Sierra Leone',
+        'SGP': 'Singapur', 'SXM': 'Sint Maarten', 'SVK': 'Slovakya', 'SVN': 'Slovenya',
+        'SLB': 'Solomon Adaları', 'SOM': 'Somali', 'ZAF': 'Güney Afrika', 'SGS': 'Güney Georgia',
+        'SSD': 'Güney Sudan', 'ESP': 'İspanya', 'LKA': 'Sri Lanka', 'SDN': 'Sudan',
+        'SUR': 'Surinam', 'SJM': 'Svalbard ve Jan Mayen', 'SWZ': 'Esvatini', 'SWE': 'İsveç',
+        'CHE': 'İsviçre', 'SYR': 'Suriye', 'TWN': 'Tayvan', 'TJK': 'Tacikistan',
+        'TZA': 'Tanzanya', 'THA': 'Tayland', 'TLS': 'Doğu Timor', 'TGO': 'Togo',
+        'TKL': 'Tokelau', 'TON': 'Tonga', 'TTO': 'Trinidad ve Tobago', 'TUN': 'Tunus',
+        'TUR': 'Türkiye', 'TKM': 'Türkmenistan', 'TCA': 'Turks ve Caicos Adaları',
+        'TUV': 'Tuvalu', 'UGA': 'Uganda', 'UKR': 'Ukrayna', 'ARE': 'Birleşik Arap Emirlikleri',
+        'GBR': 'Birleşik Krallık', 'USA': 'Amerika Birleşik Devletleri', 'UMI': 'ABD Küçük Dış Adaları',
+        'URY': 'Uruguay', 'UZB': 'Özbekistan', 'VUT': 'Vanuatu', 'VEN': 'Venezuela',
+        'VNM': 'Vietnam', 'VGB': 'Britanya Virjin Adaları', 'VIR': 'ABD Virjin Adaları',
+        'WLF': 'Wallis ve Futuna', 'ESH': 'Batı Sahara', 'YEM': 'Yemen', 'ZMB': 'Zambiya',
+        'ZWE': 'Zimbabve', 'ALA': 'Åland Adaları', 'XKX': 'Kosova', 'CUW': 'Curaçao',
+        'BES': 'Karayip Hollandası', '-99': 'Kuzey Kıbrıs'
+    };
 
     // Turkey provinces with plate codes - proper UTF-8 encoding
     const provinces = {
@@ -916,6 +1086,72 @@ const MapPage = () => {
             }}>
                 {/* Left Section - Title and Map */}
                 <div className="left-section" style={{ flex: '1', paddingRight: '20px' }}>
+                    {/* Tab Buttons */}
+                    <div className="tab-buttons" style={{
+                        display: 'flex',
+                        gap: '10px',
+                        marginBottom: '15px'
+                    }}>
+                        <button
+                            onClick={() => {
+                                setActiveTab('turkiye');
+                                setCurrentView('turkiye');
+                                setHoveredProvince(null);
+                                setSelectedProvince(null);
+                                setHoveredCountry(null);
+                                setSelectedCountry(null);
+                                setMembers([]);
+                                if (selectedElementRef.current) {
+                                    const originalFill = selectedElementRef.current.dataset.originalFill || 'silver';
+                                    selectedElementRef.current.style.fill = originalFill;
+                                    selectedElementRef.current = null;
+                                }
+                            }}
+                            style={{
+                                padding: '10px 25px',
+                                border: 'none',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                fontWeight: 'bold',
+                                fontSize: '14px',
+                                transition: 'all 0.3s ease',
+                                backgroundColor: activeTab === 'turkiye' ? '#28a745' : '#e0e0e0',
+                                color: activeTab === 'turkiye' ? '#fff' : '#333'
+                            }}
+                        >
+                            🇹🇷 Türkiye
+                        </button>
+                        <button
+                            onClick={() => {
+                                setActiveTab('world');
+                                setCurrentView('turkiye');
+                                setHoveredProvince(null);
+                                setSelectedProvince(null);
+                                setHoveredCountry(null);
+                                setSelectedCountry(null);
+                                setMembers([]);
+                                if (selectedElementRef.current) {
+                                    const originalFill = selectedElementRef.current.dataset.originalFill || 'silver';
+                                    selectedElementRef.current.style.fill = originalFill;
+                                    selectedElementRef.current = null;
+                                }
+                            }}
+                            style={{
+                                padding: '10px 25px',
+                                border: 'none',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                fontWeight: 'bold',
+                                fontSize: '14px',
+                                transition: 'all 0.3s ease',
+                                backgroundColor: activeTab === 'world' ? '#28a745' : '#e0e0e0',
+                                color: activeTab === 'world' ? '#fff' : '#333'
+                            }}
+                        >
+                            🌍 Dünya
+                        </button>
+                    </div>
+
                     {/* Title and Province Info Section */}
                     <div className="header-section" style={{
                         display: 'flex',
@@ -925,110 +1161,198 @@ const MapPage = () => {
                     }}>
                         {/* Title */}
                         <div className="title-section">
-                            <h2 className="section-title mb-4">SaHa Türkiye Geneli Üye Haritası</h2>
+                            <h2 className="section-title mb-4">
+                                {activeTab === 'turkiye' 
+                                    ? 'SaHa Türkiye Geneli Üye Haritası'
+                                    : 'SaHa Dünya Geneli Üye Haritası'
+                                }
+                            </h2>
                             <p className="mb-3 text-gray-600">
-                                Üye profillerini görmek için bir {currentView === 'istanbul' ? 'ilçeye' : 'ile'} tıklayın
+                                {activeTab === 'turkiye'
+                                    ? `Üye profillerini görmek için bir ${currentView === 'istanbul' ? 'ilçeye' : 'ile'} tıklayın`
+                                    : 'Üye profillerini görmek için bir ülkeye tıklayın'
+                                }
                             </p>
                         </div>
 
-                        {/* Province Info Boxes */}
+                        {/* Province/Country Info Boxes */}
                         <div className="province-info-boxes" style={{
                             display: 'flex',
                             gap: '15px',
                             flex: '1',
                             minWidth: '0'
                         }}>
-                            {hoveredProvince ? (
-                                <div className="hovered-info card animate-fade-in" style={{
-                                    flex: '1',
-                                    padding: '20px',
-                                    border: '2px solid #ff6b35',
-                                    minHeight: '110px',
-                                    minWidth: '0',
-                                    overflow: 'hidden',
-                                    background: '#ffffff',
-                                    backdropFilter: 'none'
-                                }}>
-                                    <h4 style={{ margin: '0 0 4px 0', color: '#ff6b35', fontSize: '14px', whiteSpace: 'nowrap' }}>
-                                        {currentView === 'istanbul' ? 'Üzerine Gelinen İlçe' : 'Üzerine Gelinen İl'}
-                                    </h4>
-                                    <p style={{ margin: '0', fontSize: '16px', fontWeight: 'bold', lineHeight: '1.1', wordBreak: 'break-word', color: '#333333' }}>
-                                        {hoveredProvince.name}
-                                    </p>
-                                    {currentView !== 'istanbul' ? (
-                                        <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '14px' }}>
-                                            Plaka: {hoveredProvince.code} | Üye: {(() => {
-                                                const hoveredMembers = getMembersByProvince(hoveredProvince.code, hoveredProvince.name);
-                                                return hoveredMembers.length;
-                                            })()}
-                                        </p>
+                            {activeTab === 'world' ? (
+                                /* World Map Info Boxes */
+                                <>
+                                    {hoveredCountry ? (
+                                        <div className="hovered-info card animate-fade-in" style={{
+                                            flex: '1',
+                                            padding: '20px',
+                                            border: '2px solid #ff6b35',
+                                            minHeight: '110px',
+                                            minWidth: '0',
+                                            overflow: 'hidden',
+                                            background: '#ffffff',
+                                            backdropFilter: 'none'
+                                        }}>
+                                            <h4 style={{ margin: '0 0 4px 0', color: '#ff6b35', fontSize: '14px', whiteSpace: 'nowrap' }}>
+                                                Üzerine Gelinen Ülke
+                                            </h4>
+                                            <p style={{ margin: '0', fontSize: '16px', fontWeight: 'bold', lineHeight: '1.1', wordBreak: 'break-word', color: '#333333' }}>
+                                                {hoveredCountry.name}
+                                            </p>
+                                        </div>
                                     ) : (
-                                        <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '14px' }}>
-                                            Üye: {getDistrictMemberCount(hoveredProvince.name)}
-                                        </p>
+                                        <div className="hover-instruction card animate-fade-in" style={{
+                                            flex: '1',
+                                            padding: '20px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            minHeight: '110px',
+                                            minWidth: '0',
+                                            background: '#ffffff',
+                                            backdropFilter: 'none'
+                                        }}>
+                                            <p style={{ margin: '0', color: '#666', fontSize: '12px', textAlign: 'center' }}>
+                                                Bir ülkenin üzerine gelin
+                                            </p>
+                                        </div>
                                     )}
-                                </div>
-                            ) : (
-                                <div className="hover-instruction card animate-fade-in" style={{
-                                    flex: '1',
-                                    padding: '20px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    minHeight: '110px',
-                                    minWidth: '0',
-                                    background: '#ffffff',
-                                    backdropFilter: 'none'
-                                }}>
-                                    <p style={{ margin: '0', color: '#666', fontSize: '12px', textAlign: 'center' }}>
-                                        Bir {currentView === 'istanbul' ? 'ilçenin' : 'ilin'} üzerine gelin
-                                    </p>
-                                </div>
-                            )}
 
-                            {selectedProvince ? (
-                                <div className="selected-info card animate-fade-in" style={{
-                                    flex: '1',
-                                    padding: '20px',
-                                    border: '2px solid #28a745',
-                                    minHeight: '110px',
-                                    minWidth: '0',
-                                    overflow: 'hidden',
-                                    background: '#ffffff',
-                                    backdropFilter: 'none'
-                                }}>
-                                    <h4 style={{ margin: '0 0 4px 0', color: '#28a745', fontSize: '14px', whiteSpace: 'nowrap' }}>
-                                        {currentView === 'istanbul' ? 'Seçilen İlçe' : 'Seçilen İl'}
-                                    </h4>
-                                    <p style={{ margin: '0', fontSize: '16px', fontWeight: 'bold', lineHeight: '1.1', wordBreak: 'break-word', color: '#333333' }}>
-                                        {selectedProvince.name}
-                                    </p>
-                                    {currentView !== 'istanbul' ? (
-                                        <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '14px' }}>
-                                            Plaka: {selectedProvince.code} | Üye: {members.length}
-                                        </p>
+                                    {selectedCountry ? (
+                                        <div className="selected-info card animate-fade-in" style={{
+                                            flex: '1',
+                                            padding: '20px',
+                                            border: '2px solid #28a745',
+                                            minHeight: '110px',
+                                            minWidth: '0',
+                                            overflow: 'hidden',
+                                            background: '#ffffff',
+                                            backdropFilter: 'none'
+                                        }}>
+                                            <h4 style={{ margin: '0 0 4px 0', color: '#28a745', fontSize: '14px', whiteSpace: 'nowrap' }}>
+                                                Seçilen Ülke
+                                            </h4>
+                                            <p style={{ margin: '0', fontSize: '16px', fontWeight: 'bold', lineHeight: '1.1', wordBreak: 'break-word', color: '#333333' }}>
+                                                {selectedCountry.name}
+                                            </p>
+                                        </div>
                                     ) : (
-                                        <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '14px' }}>
-                                            Üye: {members.length}
-                                        </p>
+                                        <div className="click-instruction card animate-fade-in" style={{
+                                            flex: '1',
+                                            padding: '20px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            minHeight: '110px',
+                                            minWidth: '0',
+                                            background: '#ffffff',
+                                            backdropFilter: 'none'
+                                        }}>
+                                            <p style={{ margin: '0', color: '#666', fontSize: '12px', textAlign: 'center' }}>
+                                                Bir ülkeye tıklayın
+                                            </p>
+                                        </div>
                                     )}
-                                </div>
+                                </>
                             ) : (
-                                <div className="click-instruction card animate-fade-in" style={{
-                                    flex: '1',
-                                    padding: '20px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    minHeight: '110px',
-                                    minWidth: '0',
-                                    background: '#ffffff',
-                                    backdropFilter: 'none'
-                                }}>
-                                    <p style={{ margin: '0', color: '#666', fontSize: '12px', textAlign: 'center' }}>
-                                        Bir {currentView === 'istanbul' ? 'ilçeye' : 'ile'} tıklayın
-                                    </p>
-                                </div>
+                                /* Turkey Map Info Boxes */
+                                <>
+                                    {hoveredProvince ? (
+                                        <div className="hovered-info card animate-fade-in" style={{
+                                            flex: '1',
+                                            padding: '20px',
+                                            border: '2px solid #ff6b35',
+                                            minHeight: '110px',
+                                            minWidth: '0',
+                                            overflow: 'hidden',
+                                            background: '#ffffff',
+                                            backdropFilter: 'none'
+                                        }}>
+                                            <h4 style={{ margin: '0 0 4px 0', color: '#ff6b35', fontSize: '14px', whiteSpace: 'nowrap' }}>
+                                                {currentView === 'istanbul' ? 'Üzerine Gelinen İlçe' : 'Üzerine Gelinen İl'}
+                                            </h4>
+                                            <p style={{ margin: '0', fontSize: '16px', fontWeight: 'bold', lineHeight: '1.1', wordBreak: 'break-word', color: '#333333' }}>
+                                                {hoveredProvince.name}
+                                            </p>
+                                            {currentView !== 'istanbul' ? (
+                                                <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '14px' }}>
+                                                    Plaka: {hoveredProvince.code} | Üye: {(() => {
+                                                        const hoveredMembers = getMembersByProvince(hoveredProvince.code, hoveredProvince.name);
+                                                        return hoveredMembers.length;
+                                                    })()}
+                                                </p>
+                                            ) : (
+                                                <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '14px' }}>
+                                                    Üye: {getDistrictMemberCount(hoveredProvince.name)}
+                                                </p>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="hover-instruction card animate-fade-in" style={{
+                                            flex: '1',
+                                            padding: '20px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            minHeight: '110px',
+                                            minWidth: '0',
+                                            background: '#ffffff',
+                                            backdropFilter: 'none'
+                                        }}>
+                                            <p style={{ margin: '0', color: '#666', fontSize: '12px', textAlign: 'center' }}>
+                                                Bir {currentView === 'istanbul' ? 'ilçenin' : 'ilin'} üzerine gelin
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {selectedProvince ? (
+                                        <div className="selected-info card animate-fade-in" style={{
+                                            flex: '1',
+                                            padding: '20px',
+                                            border: '2px solid #28a745',
+                                            minHeight: '110px',
+                                            minWidth: '0',
+                                            overflow: 'hidden',
+                                            background: '#ffffff',
+                                            backdropFilter: 'none'
+                                        }}>
+                                            <h4 style={{ margin: '0 0 4px 0', color: '#28a745', fontSize: '14px', whiteSpace: 'nowrap' }}>
+                                                {currentView === 'istanbul' ? 'Seçilen İlçe' : 'Seçilen İl'}
+                                            </h4>
+                                            <p style={{ margin: '0', fontSize: '16px', fontWeight: 'bold', lineHeight: '1.1', wordBreak: 'break-word', color: '#333333' }}>
+                                                {selectedProvince.name}
+                                            </p>
+                                            {currentView !== 'istanbul' ? (
+                                                <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '14px' }}>
+                                                    Plaka: {selectedProvince.code} | Üye: {members.length}
+                                                </p>
+                                            ) : (
+                                                <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '14px' }}>
+                                                    Üye: {members.length}
+                                                </p>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="click-instruction card animate-fade-in" style={{
+                                            flex: '1',
+                                            padding: '20px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            minHeight: '110px',
+                                            minWidth: '0',
+                                            background: '#ffffff',
+                                            backdropFilter: 'none'
+                                        }}>
+                                            <p style={{ margin: '0', color: '#666', fontSize: '12px', textAlign: 'center' }}>
+                                                Bir {currentView === 'istanbul' ? 'ilçeye' : 'ile'} tıklayın
+                                            </p>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </div>
                     </div>
@@ -1037,7 +1361,16 @@ const MapPage = () => {
                     <div className="svg-turkiye-haritasi" ref={mapRef} style={{
                         width: '100%'
                     }}>
-                        {currentView === 'turkiye' ? (
+                        {activeTab === 'world' ? (
+                            /* World Map */
+                            <WorldMap 
+                                hoveredCountry={hoveredCountry}
+                                setHoveredCountry={setHoveredCountry}
+                                selectedCountry={selectedCountry}
+                                setSelectedCountry={setSelectedCountry}
+                                countryNames={countryNames}
+                            />
+                        ) : currentView === 'turkiye' ? (
                             <TurkiyeHaritasi style={{ width: '100%', height: 'auto' }} />
                         ) : (
                             <div style={{ position: 'relative', width: '105%' }}>
