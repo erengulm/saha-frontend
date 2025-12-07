@@ -128,7 +128,7 @@ export default function UyelerdenHaberlerPage() {
         <div className="uyelerden-haberler-page" style={{ 
             minHeight: '100vh',
             paddingTop: '80px',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+            background: 'linear-gradient(135deg, #1e3a8a 0%, #475569 100%)'
         }}>
             <div className="page-container" style={{
                 maxWidth: '800px',
@@ -185,7 +185,7 @@ export default function UyelerdenHaberlerPage() {
                                 transition: 'border-color 0.2s',
                                 boxSizing: 'border-box'
                             }}
-                            onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                            onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
                             onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
                         />
                         <button
@@ -194,7 +194,7 @@ export default function UyelerdenHaberlerPage() {
                             style={{
                                 marginTop: '1rem',
                                 padding: '0.75rem 2rem',
-                                background: submitting || !newPost.trim() ? '#ccc' : '#667eea',
+                                background: submitting || !newPost.trim() ? '#ccc' : '#3b82f6',
                                 color: 'white',
                                 border: 'none',
                                 borderRadius: '8px',
@@ -206,12 +206,12 @@ export default function UyelerdenHaberlerPage() {
                             }}
                             onMouseEnter={(e) => {
                                 if (!submitting && newPost.trim()) {
-                                    e.target.style.background = '#5568d3';
+                                    e.target.style.background = '#2563eb';
                                 }
                             }}
                             onMouseLeave={(e) => {
                                 if (!submitting && newPost.trim()) {
-                                    e.target.style.background = '#667eea';
+                                    e.target.style.background = '#3b82f6';
                                 }
                             }}
                         >
@@ -270,7 +270,7 @@ export default function UyelerdenHaberlerPage() {
                                     <div>
                                         <h3 style={{
                                             margin: '0',
-                                            color: '#667eea',
+                                            color: '#3b82f6',
                                             fontSize: '1.1rem',
                                             fontWeight: '600'
                                         }}>
