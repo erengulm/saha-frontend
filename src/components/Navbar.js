@@ -44,6 +44,16 @@ export default function Navbar({ user, logout }) {
                         <ul className="nav-links desktop-nav">
                             <li>
                                 <NavLink
+                                    to="/makaleler"
+                                    className={({ isActive }) =>
+                                        `nav-link ${isActive ? 'nav-link-active' : ''}`
+                                    }
+                                >
+                                    Makaleler
+                                </NavLink>
+                            </li>
+                            <li>
+                                <NavLink
                                     to="/sahadan-haberler"
                                     className={({ isActive }) =>
                                         `nav-link ${isActive ? 'nav-link-active' : ''}`
@@ -60,16 +70,6 @@ export default function Navbar({ user, logout }) {
                                     }
                                 >
                                     Üyelerden Haberler
-                                </NavLink>
-                            </li>
-                            <li>
-                                <NavLink
-                                    to="/makaleler"
-                                    className={({ isActive }) =>
-                                        `nav-link ${isActive ? 'nav-link-active' : ''}`
-                                    }
-                                >
-                                    Makaleler
                                 </NavLink>
                             </li>
                             <li>
@@ -134,6 +134,17 @@ export default function Navbar({ user, logout }) {
                         <ul className="mobile-nav-links">
                             <li>
                                 <NavLink
+                                    to="/makaleler"
+                                    className={({ isActive }) =>
+                                        `mobile-nav-link ${isActive ? 'mobile-nav-link-active' : ''}`
+                                    }
+                                    onClick={closeMobileMenu}
+                                >
+                                    Makaleler
+                                </NavLink>
+                            </li>
+                            <li>
+                                <NavLink
                                     to="/sahadan-haberler"
                                     className={({ isActive }) =>
                                         `mobile-nav-link ${isActive ? 'mobile-nav-link-active' : ''}`
@@ -152,17 +163,6 @@ export default function Navbar({ user, logout }) {
                                     onClick={closeMobileMenu}
                                 >
                                     Üyelerden Haberler
-                                </NavLink>
-                            </li>
-                            <li>
-                                <NavLink
-                                    to="/makaleler"
-                                    className={({ isActive }) =>
-                                        `mobile-nav-link ${isActive ? 'mobile-nav-link-active' : ''}`
-                                    }
-                                    onClick={closeMobileMenu}
-                                >
-                                    Makaleler
                                 </NavLink>
                             </li>
                             <li>
