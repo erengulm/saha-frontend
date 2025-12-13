@@ -9,7 +9,6 @@ export default function MakalelerPage() {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState(null);
-    const [currentUser, setCurrentUser] = useState(null);
     const [isAdmin, setIsAdmin] = useState(false);
     const [expandedArticle, setExpandedArticle] = useState(null);
 
@@ -18,7 +17,6 @@ export default function MakalelerPage() {
         const fetchCurrentUser = async () => {
             try {
                 const response = await axios.get('/api/user/profile/');
-                setCurrentUser(response.data);
                 setIsAdmin(response.data.role === 'admin' || response.data.role === 'superadmin');
             } catch (err) {
                 console.error('Failed to fetch user profile:', err);
@@ -113,7 +111,7 @@ export default function MakalelerPage() {
         <div className="makaleler-page" style={{ 
             minHeight: '100vh',
             paddingTop: '80px',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+            background: 'linear-gradient(135deg, #065f46 0%, #374151 100%)'
         }}>
             <div className="page-container" style={{
                 maxWidth: '800px',
@@ -171,7 +169,7 @@ export default function MakalelerPage() {
                                     boxSizing: 'border-box',
                                     marginBottom: '1rem'
                                 }}
-                                onFocus={(e) => e.target.style.borderColor = '#764ba2'}
+                                onFocus={(e) => e.target.style.borderColor = '#10b981'}
                                 onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
                             />
                             <textarea
@@ -191,7 +189,7 @@ export default function MakalelerPage() {
                                     transition: 'border-color 0.2s',
                                     boxSizing: 'border-box'
                                 }}
-                                onFocus={(e) => e.target.style.borderColor = '#764ba2'}
+                                onFocus={(e) => e.target.style.borderColor = '#10b981'}
                                 onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
                             />
                             <button
@@ -200,7 +198,7 @@ export default function MakalelerPage() {
                                 style={{
                                     marginTop: '1rem',
                                     padding: '0.75rem 2rem',
-                                    background: submitting || !newTitle.trim() || !newContent.trim() ? '#ccc' : '#764ba2',
+                                    background: submitting || !newTitle.trim() || !newContent.trim() ? '#ccc' : '#10b981',
                                     color: 'white',
                                     border: 'none',
                                     borderRadius: '8px',
@@ -212,12 +210,12 @@ export default function MakalelerPage() {
                                 }}
                                 onMouseEnter={(e) => {
                                     if (!submitting && newTitle.trim() && newContent.trim()) {
-                                        e.target.style.background = '#5f3d8a';
+                                        e.target.style.background = '#059669';
                                     }
                                 }}
                                 onMouseLeave={(e) => {
                                     if (!submitting && newTitle.trim() && newContent.trim()) {
-                                        e.target.style.background = '#764ba2';
+                                        e.target.style.background = '#10b981';
                                     }
                                 }}
                             >
@@ -279,14 +277,14 @@ export default function MakalelerPage() {
                                             onClick={() => toggleArticle(item.id)}
                                             style={{
                                                 margin: '0',
-                                                color: '#764ba2',
+                                                color: '#10b981',
                                                 fontSize: '1.5rem',
                                                 fontWeight: '700',
                                                 cursor: 'pointer',
                                                 transition: 'color 0.2s'
                                             }}
-                                            onMouseEnter={(e) => e.target.style.color = '#5f3d8a'}
-                                            onMouseLeave={(e) => e.target.style.color = '#764ba2'}
+                                            onMouseEnter={(e) => e.target.style.color = '#059669'}
+                                            onMouseLeave={(e) => e.target.style.color = '#10b981'}
                                         >
                                             {item.title}
                                         </h2>
@@ -339,8 +337,8 @@ export default function MakalelerPage() {
                                             marginTop: '1rem',
                                             padding: '0.5rem 1rem',
                                             background: 'transparent',
-                                            color: '#764ba2',
-                                            border: '2px solid #764ba2',
+                                            color: '#10b981',
+                                            border: '2px solid #10b981',
                                             borderRadius: '6px',
                                             fontSize: '0.875rem',
                                             fontWeight: '600',
@@ -348,12 +346,12 @@ export default function MakalelerPage() {
                                             transition: 'all 0.2s'
                                         }}
                                         onMouseEnter={(e) => {
-                                            e.target.style.background = '#764ba2';
+                                            e.target.style.background = '#10b981';
                                             e.target.style.color = 'white';
                                         }}
                                         onMouseLeave={(e) => {
                                             e.target.style.background = 'transparent';
-                                            e.target.style.color = '#764ba2';
+                                            e.target.style.color = '#10b981';
                                         }}
                                     >
                                         {expandedArticle === item.id ? 'Daha Az Göster' : 'Devamını Oku'}
